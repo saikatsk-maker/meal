@@ -1,11 +1,1259 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mess Meal Manager</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { background: #f8fafc; }
+    .glass { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); }
+    .card-animate {
+      animation: cardIn .35s ease both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn .35s ease both; }
+    @keyframes fadeIn { from {opacity:0} to {opacity:1} }
+    .btn { transition: .2s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .table-wrap { overflow-x: auto; }
+    input, select {
+      outline: none;
+    }
+    input:focus, select:focus {
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+      border-color: #60a5fa !important;
+    }
+  </style>
 </head>
-<body>
-    <h1>hii</h1>
+
+<body class="text-slate-800">
+
+  <!-- LOGIN MODAL -->
+  <div id="loginModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 p-4 items-center justify-center">
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl fade-in">
+      <div class="mb-5 text-center">
+        <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white text-xl">
+          <i class="fa-solid fa-right-to-bracket"></i>
+        </div>
+        <h2 class="text-2xl font-bold">Manager Login</h2>
+        <p class="mt-1 text-sm text-slate-500">Admin or assigned Moderator</p>
+      </div>
+
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium">Email</label>
+          <input id="loginEmail" type="email" required
+            class="w-full rounded-xl border border-slate-300 px-4 py-3"
+            placeholder="your@email.com">
+        </div>
+
+        <div>
+          <label class="mb-1 block text-sm font-medium">Password</label>
+          <input id="loginPassword" type="password" required
+            class="w-full rounded-xl border border-slate-300 px-4 py-3"
+            placeholder="••••••••">
+        </div>
+
+        <p id="loginError" class="hidden rounded-xl bg-red-50 p-3 text-sm text-red-600"></p>
+
+        <div class="flex gap-2">
+          <button type="submit"
+            class="btn flex-1 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700">
+            <i class="fa-solid fa-right-to-bracket mr-1"></i> Login
+          </button>
+          <button type="button" onclick="closeLogin()"
+            class="btn rounded-xl bg-slate-100 px-4 py-3 font-semibold hover:bg-slate-200">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 border-b border-slate-200 glass shadow-sm">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
+      <div>
+        <h1 class="text-xl font-extrabold sm:text-2xl">
+          <i class="fa-solid fa-utensils text-blue-600"></i>
+          Mess Meal Manager
+        </h1>
+        <p class="text-xs text-slate-500 sm:text-sm">
+          Current accounting month:
+          <span id="currentMonthLabel" class="font-semibold text-blue-600"></span>
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span id="roleBadge"
+          class="hidden rounded-full px-3 py-1 text-xs font-bold"></span>
+
+        <button id="loginBtn" onclick="openLogin()"
+          class="btn rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+          <i class="fa-solid fa-lock mr-1"></i> Login
+        </button>
+
+        <button id="logoutBtn" onclick="logout()"
+          class="btn hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">
+          <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 py-5 sm:py-8">
+
+    <!-- STATUS -->
+    <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm card-animate">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-slate-500">Account status</p>
+          <div class="mt-1 flex items-center gap-2">
+            <span id="monthStatusDot" class="h-3 w-3 rounded-full bg-emerald-500"></span>
+            <span id="monthStatusText" class="font-bold">Open</span>
+          </div>
+        </div>
+
+        <div id="adminControls" class="hidden flex flex-wrap gap-2">
+          <button id="closeMonthBtn" onclick="toggleMonthClose()"
+            class="btn rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600">
+            <i class="fa-solid fa-lock mr-1"></i> Close Month
+          </button>
+        </div>
+      </div>
+
+      <div id="viewerNotice"
+        class="mt-3 rounded-xl bg-blue-50 p-3 text-sm text-blue-700">
+        <i class="fa-solid fa-eye mr-1"></i>
+        You are viewing the current mess হিসাব. Login is required only for Admin/Moderator actions.
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
+        <p class="text-xs text-slate-500">Boarder</p>
+        <p id="totalBoarder" class="mt-1 text-2xl font-extrabold">0</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
+        <p class="text-xs text-slate-500">Billable Meals</p>
+        <p id="totalMeals" class="mt-1 text-2xl font-extrabold">0</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
+        <p class="text-xs text-slate-500">Food Cost</p>
+        <p id="totalFoodCost" class="mt-1 text-2xl font-extrabold">৳0</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
+        <p class="text-xs text-slate-500">Meal Rate</p>
+        <p id="mealRate" class="mt-1 text-2xl font-extrabold">৳0</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
+        <p class="text-xs text-slate-500">Non-Food Cost</p>
+        <p id="totalNonFoodCost" class="mt-1 text-2xl font-extrabold">৳0</p>
+      </div>
+      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
+        <p class="text-xs text-slate-500">Extra Rate</p>
+        <p id="extraRate" class="mt-1 text-2xl font-extrabold">৳0</p>
+      </div>
+    </section>
+
+    <!-- AUTH / MANAGER INFO -->
+    <section id="managerPanel" class="mb-6 hidden rounded-2xl border border-blue-100 bg-blue-50 p-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-blue-500">Logged in</p>
+          <p id="loggedUserText" class="font-bold text-blue-900"></p>
+          <p id="managerText" class="text-sm text-blue-700"></p>
+        </div>
+
+        <div id="adminManagerBox" class="hidden w-full lg:max-w-md">
+          <label class="mb-1 block text-sm font-semibold text-blue-900">Current Moderator / Manager</label>
+          <div class="flex gap-2">
+            <select id="managerSelect"
+              class="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 py-2"></select>
+            <button onclick="saveManager()"
+              class="btn rounded-xl bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MONEY SUMMARY -->
+    <section class="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-lg">
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+          <p class="text-sm text-slate-400">Total Expense</p>
+          <p id="totalExpense" class="mt-1 text-2xl font-extrabold">৳0</p>
+        </div>
+        <div>
+          <p class="text-sm text-slate-400">Total Deposit</p>
+          <p id="totalDeposit" class="mt-1 text-2xl font-extrabold">৳0</p>
+        </div>
+        <div>
+          <p class="text-sm text-slate-400">Remaining Money</p>
+          <p id="remainingMoney" class="mt-1 text-2xl font-extrabold">৳0</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEMBERS -->
+    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-bold"><i class="fa-solid fa-users text-blue-600 mr-1"></i> Members</h2>
+          <p class="text-sm text-slate-500">Boarder list for this current account.</p>
+        </div>
+      </div>
+
+      <div id="memberFormArea" class="mb-4 hidden">
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <input id="memberName" type="text" placeholder="Member name"
+            class="min-w-0 flex-1 rounded-xl border border-slate-300 px-4 py-3">
+          <button onclick="addMember()"
+            class="btn rounded-xl bg-blue-600 px-5 py-3 font-bold text-white hover:bg-blue-700">
+            <i class="fa-solid fa-plus mr-1"></i> Add Member
+          </button>
+        </div>
+      </div>
+
+      <div id="memberList" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"></div>
+    </section>
+
+    <!-- BIG BAZAR -->
+    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-lg font-bold"><i class="fa-solid fa-cart-shopping text-emerald-600 mr-1"></i> Big Bazar</h2>
+          <p class="text-sm text-slate-500">Unlimited entries.</p>
+        </div>
+        <span id="bazarCount" class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">0 entries</span>
+      </div>
+
+      <div id="bazarFormArea" class="mb-5 hidden">
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <input id="bazarDate" type="date" class="rounded-xl border border-slate-300 px-3 py-3">
+          <input id="bazarItem" type="text" placeholder="Item name" class="rounded-xl border border-slate-300 px-3 py-3">
+          <select id="bazarCategory" class="rounded-xl border border-slate-300 px-3 py-3">
+            <option value="food">Food</option>
+            <option value="non-food">Non-Food</option>
+          </select>
+          <div class="flex gap-2">
+            <input id="bazarAmount" type="number" min="0" step="0.01" placeholder="Amount"
+              class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3">
+            <button id="bazarSubmitBtn" onclick="addBazar()"
+              class="btn rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white hover:bg-emerald-700">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="w-full min-w-[650px] text-left text-sm">
+          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
+            <tr><th class="p-3">Date</th><th class="p-3">Item</th><th class="p-3">Category</th><th class="p-3">Amount</th><th class="p-3">Action</th></tr>
+          </thead>
+          <tbody id="bazarTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DEPOSIT -->
+    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-money-bill-transfer text-blue-600 mr-1"></i> Deposits</h2>
+
+      <div id="depositFormArea" class="mb-5 hidden">
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <input id="depositDate" type="date" class="rounded-xl border border-slate-300 px-3 py-3">
+          <select id="depositMember" class="rounded-xl border border-slate-300 px-3 py-3"></select>
+          <input id="depositAmount" type="number" min="0" step="0.01" placeholder="Amount"
+            class="rounded-xl border border-slate-300 px-3 py-3">
+          <button onclick="addDeposit()"
+            class="btn rounded-xl bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700">
+            Add Deposit
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="w-full min-w-[600px] text-left text-sm">
+          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
+            <tr><th class="p-3">Date</th><th class="p-3">Member</th><th class="p-3">Amount</th><th class="p-3">Action</th></tr>
+          </thead>
+          <tbody id="depositTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EXTRA EXPENSE -->
+    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-receipt text-orange-600 mr-1"></i> Extra Expenses</h2>
+
+      <div id="extraFormArea" class="mb-5 hidden">
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <input id="extraDate" type="date" class="rounded-xl border border-slate-300 px-3 py-3">
+          <input id="extraItem" type="text" placeholder="Expense item" class="rounded-xl border border-slate-300 px-3 py-3">
+          <select id="extraCategory" class="rounded-xl border border-slate-300 px-3 py-3">
+            <option value="non-food">Non-Food</option>
+            <option value="food">Food</option>
+          </select>
+          <div class="flex gap-2">
+            <input id="extraAmount" type="number" min="0" step="0.01" placeholder="Amount"
+              class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3">
+            <button onclick="addExtra()"
+              class="btn rounded-xl bg-orange-600 px-4 py-3 font-bold text-white hover:bg-orange-700">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="w-full min-w-[650px] text-left text-sm">
+          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
+            <tr><th class="p-3">Date</th><th class="p-3">Item</th><th class="p-3">Category</th><th class="p-3">Amount</th><th class="p-3">Action</th></tr>
+          </thead>
+          <tbody id="extraTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DAILY MEALS -->
+    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <div class="mb-4">
+        <h2 class="text-lg font-bold"><i class="fa-solid fa-bowl-food text-purple-600 mr-1"></i> Daily Meals</h2>
+        <p class="text-sm text-slate-500">
+          Each member's own meal is entered once per day. Guest meals are added on top of the 75 minimum.
+        </p>
+      </div>
+
+      <div id="mealFormArea" class="hidden">
+        <div class="mb-4">
+          <label class="mb-1 block text-sm font-semibold">Date</label>
+          <input id="mealDate" type="date" onchange="renderMealInputs()"
+            class="w-full rounded-xl border border-slate-300 px-3 py-3 sm:max-w-xs">
+        </div>
+
+        <div id="mealInputs" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+
+        <button onclick="addMeal()"
+          class="mt-4 btn rounded-xl bg-purple-600 px-5 py-3 font-bold text-white hover:bg-purple-700">
+          <i class="fa-solid fa-floppy-disk mr-1"></i> Save Daily Meals
+        </button>
+      </div>
+
+      <div class="mt-5 table-wrap">
+        <table class="w-full min-w-[800px] text-left text-sm">
+          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
+            <tr><th class="p-3">Date</th><th class="p-3">Member</th><th class="p-3">Own</th><th class="p-3">Guest</th><th class="p-3">Billable</th><th class="p-3">Action</th></tr>
+          </thead>
+          <tbody id="mealTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FINAL SUMMARY -->
+    <section class="mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-lg font-bold"><i class="fa-solid fa-file-invoice-dollar text-indigo-600 mr-1"></i> Final Bill Summary</h2>
+          <p class="text-sm text-slate-500">75 minimum applies to own meals; guest meals are extra.</p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="w-full min-w-[1050px] text-left text-sm">
+          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
+            <tr>
+              <th class="p-3">Member</th>
+              <th class="p-3">Own</th>
+              <th class="p-3">Guest</th>
+              <th class="p-3">Billable</th>
+              <th class="p-3">Meal Cost</th>
+              <th class="p-3">Extra</th>
+              <th class="p-3">Final Bill</th>
+              <th class="p-3">Deposit</th>
+              <th class="p-3">Balance</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BACKUP / REPORT -->
+    <section class="mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-database text-slate-700 mr-1"></i> Backup & Report</h2>
+      <div class="flex flex-wrap gap-2">
+        <button onclick="downloadJSONBackup()"
+          class="btn rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-900">
+          <i class="fa-solid fa-download mr-1"></i> JSON Backup
+        </button>
+        <button onclick="downloadExcelReport()"
+          class="btn rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white hover:bg-green-700">
+          <i class="fa-solid fa-file-excel mr-1"></i> Excel Report
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast"
+    class="fixed bottom-5 right-5 z-[60] hidden max-w-sm rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-xl"></div>
+
+<script>
+const SUPABASE_URL = "https://kujuzstfhnxajyouskbn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_guSYLKFpYhGJurrcEb6trA_qmEuuvxo";
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const now = new Date();
+const YEAR = now.getFullYear();
+const MONTH = now.getMonth() + 1;
+const PERIOD_KEY = `${YEAR}-${String(MONTH).padStart(2, "0")}`;
+const MONTH_LABEL = now.toLocaleString("en-US", { month: "long", year: "numeric" });
+
+let currentUser = null;
+let profile = null;
+let settings = null;
+let data = {
+  members: [],
+  bazars: [],
+  extras: [],
+  deposits: [],
+  meals: []
+};
+let realtimeChannel = null;
+
+const $ = id => document.getElementById(id);
+const money = n => `৳${Number(n || 0).toFixed(2)}`;
+const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({
+  "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+}[c]));
+
+function showToast(message, type="success") {
+  const el = $("toast");
+  el.textContent = message;
+  el.className = `fixed bottom-5 right-5 z-[60] max-w-sm rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-xl ${
+    type === "error" ? "bg-red-600" : "bg-slate-900"
+  }`;
+  el.classList.remove("hidden");
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => el.classList.add("hidden"), 2800);
+}
+
+function isAdmin() {
+  return profile?.role === "admin";
+}
+
+function isAssignedManager() {
+  return profile?.role === "admin" ||
+    (profile?.role === "moderator" && settings?.current_manager_id === currentUser?.id);
+}
+
+function canEdit() {
+  return isAssignedManager() && !settings?.closed;
+}
+
+function todayString() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function setupDateInputs() {
+  ["bazarDate","depositDate","extraDate","mealDate"].forEach(id => {
+    $(id).min = `${PERIOD_KEY}-01`;
+    $(id).max = todayString().startsWith(PERIOD_KEY) ? todayString() : `${PERIOD_KEY}-${new Date(YEAR, MONTH, 0).getDate()}`;
+    $(id).value = todayString().startsWith(PERIOD_KEY) ? todayString() : `${PERIOD_KEY}-01`;
+  });
+}
+
+function showLogin() {
+  $("loginModal").classList.remove("hidden");
+  $("loginModal").classList.add("flex");
+}
+
+function openLogin() { showLogin(); }
+
+function closeLogin() {
+  $("loginModal").classList.add("hidden");
+  $("loginModal").classList.remove("flex");
+  $("loginError").classList.add("hidden");
+}
+
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("loginError").classList.add("hidden");
+
+  const email = $("loginEmail").value.trim();
+  const password = $("loginPassword").value;
+
+  const { error } = await db.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    $("loginError").textContent = error.message;
+    $("loginError").classList.remove("hidden");
+    return;
+  }
+
+  closeLogin();
+  showToast("Login successful");
+  await initialize();
+});
+
+async function logout() {
+  await db.auth.signOut();
+  showToast("Logged out");
+}
+
+async function loadSession() {
+  const { data: sessionData } = await db.auth.getSession();
+  currentUser = sessionData?.session?.user || null;
+
+  if (!currentUser) {
+    profile = null;
+    return;
+  }
+
+  const { data: p, error } = await db
+    .from("profiles")
+    .select("id, full_name, role")
+    .eq("id", currentUser.id)
+    .single();
+
+  if (error) {
+    showToast("Profile not found. Contact admin.", "error");
+    await db.auth.signOut();
+    currentUser = null;
+    profile = null;
+    return;
+  }
+
+  profile = p;
+}
+
+async function loadSettings() {
+  const { data: s, error } = await db
+    .from("mess_settings")
+    .select("id, current_manager_id, closed")
+    .eq("id", true)
+    .single();
+
+  if (error) {
+    console.error(error);
+    showToast("Settings could not be loaded.", "error");
+    return;
+  }
+
+  settings = s;
+}
+
+async function loadData() {
+  const [members, bazars, extras, deposits, meals] = await Promise.all([
+    db.from("members").select("*").eq("period_key", PERIOD_KEY).order("created_at"),
+    db.from("bazars").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("extra_expenses").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("deposits").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("meals").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false })
+  ]);
+
+  const results = [members, bazars, extras, deposits, meals];
+  const bad = results.find(r => r.error);
+
+  if (bad) {
+    console.error(bad.error);
+    showToast("Data could not be loaded. Check Supabase SQL/RLS.", "error");
+    return;
+  }
+
+  data.members = members.data || [];
+  data.bazars = bazars.data || [];
+  data.extras = extras.data || [];
+  data.deposits = deposits.data || [];
+  data.meals = meals.data || [];
+}
+
+async function loadModerators() {
+  if (!isAdmin()) return;
+
+  // Profiles can be read by admin through RLS.
+  const { data: mods, error } = await db
+    .from("profiles")
+    .select("id, full_name, role")
+    .eq("role", "moderator")
+    .order("full_name");
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const select = $("managerSelect");
+  select.innerHTML = `<option value="">No manager assigned</option>` +
+    (mods || []).map(m =>
+      `<option value="${m.id}" ${settings?.current_manager_id === m.id ? "selected" : ""}>
+        ${escapeHTML(m.full_name || "Moderator")}
+      </option>`
+    ).join("");
+}
+
+async function saveManager() {
+  if (!isAdmin()) return;
+
+  const id = $("managerSelect").value || null;
+
+  const { error } = await db
+    .from("mess_settings")
+    .update({ current_manager_id: id, updated_at: new Date().toISOString() })
+    .eq("id", true);
+
+  if (error) {
+    showToast(error.message, "error");
+    return;
+  }
+
+  await loadSettings();
+  updateUI();
+  showToast("Manager updated");
+}
+
+async function toggleMonthClose() {
+  if (!isAdmin()) return;
+
+  const next = !settings.closed;
+  const action = next ? "close" : "re-open";
+
+  if (!confirm(`Are you sure you want to ${action} this month?`)) return;
+
+  const { error } = await db
+    .from("mess_settings")
+    .update({ closed: next, updated_at: new Date().toISOString() })
+    .eq("id", true);
+
+  if (error) {
+    showToast(error.message, "error");
+    return;
+  }
+
+  await loadSettings();
+  updateUI();
+  showToast(next ? "Month closed" : "Month re-opened");
+}
+
+async function addMember() {
+  if (!canEdit()) return;
+
+  const name = $("memberName").value.trim();
+  if (!name) return showToast("Enter member name", "error");
+
+  const { error } = await db.from("members").insert({
+    period_key: PERIOD_KEY,
+    name
+  });
+
+  if (error) return showToast(error.message, "error");
+
+  $("memberName").value = "";
+  await refreshData();
+  showToast("Member added");
+}
+
+async function deleteMember(id) {
+  if (!canEdit()) return;
+  if (!confirm("Delete this member? Related meals/deposits may be blocked by database rules.")) return;
+
+  const { error } = await db.from("members").delete().eq("id", id);
+  if (error) return showToast(error.message, "error");
+
+  await refreshData();
+  showToast("Member deleted");
+}
+
+async function addBazar() {
+  if (!canEdit()) return;
+
+  const date = $("bazarDate").value;
+  const item = $("bazarItem").value.trim();
+  const category = $("bazarCategory").value;
+  const amount = Number($("bazarAmount").value);
+
+  if (!date || !item || amount <= 0) return showToast("Fill all Big Bazar fields", "error");
+
+  const { error } = await db.from("bazars").insert({
+    period_key: PERIOD_KEY, date, item, category, amount
+  });
+
+  if (error) return showToast(error.message, "error");
+
+  $("bazarItem").value = "";
+  $("bazarAmount").value = "";
+  await refreshData();
+  showToast("Big Bazar added");
+}
+
+async function deleteBazar(id) {
+  if (!canEdit()) return;
+  if (!confirm("Delete this Big Bazar entry?")) return;
+
+  const { error } = await db.from("bazars").delete().eq("id", id);
+  if (error) return showToast(error.message, "error");
+
+  await refreshData();
+  showToast("Deleted");
+}
+
+async function addDeposit() {
+  if (!canEdit()) return;
+
+  const date = $("depositDate").value;
+  const member_id = $("depositMember").value;
+  const amount = Number($("depositAmount").value);
+
+  if (!date || !member_id || amount <= 0) return showToast("Fill all deposit fields", "error");
+
+  const { error } = await db.from("deposits").insert({
+    period_key: PERIOD_KEY, date, member_id, amount
+  });
+
+  if (error) return showToast(error.message, "error");
+
+  $("depositAmount").value = "";
+  await refreshData();
+  showToast("Deposit added");
+}
+
+async function deleteDeposit(id) {
+  if (!canEdit()) return;
+  if (!confirm("Delete this deposit?")) return;
+
+  const { error } = await db.from("deposits").delete().eq("id", id);
+  if (error) return showToast(error.message, "error");
+
+  await refreshData();
+  showToast("Deleted");
+}
+
+async function addExtra() {
+  if (!canEdit()) return;
+
+  const date = $("extraDate").value;
+  const item = $("extraItem").value.trim();
+  const category = $("extraCategory").value;
+  const amount = Number($("extraAmount").value);
+
+  if (!date || !item || amount <= 0) return showToast("Fill all expense fields", "error");
+
+  const { error } = await db.from("extra_expenses").insert({
+    period_key: PERIOD_KEY, date, item, category, amount
+  });
+
+  if (error) return showToast(error.message, "error");
+
+  $("extraItem").value = "";
+  $("extraAmount").value = "";
+  await refreshData();
+  showToast("Expense added");
+}
+
+async function deleteExtra(id) {
+  if (!canEdit()) return;
+  if (!confirm("Delete this expense?")) return;
+
+  const { error } = await db.from("extra_expenses").delete().eq("id", id);
+  if (error) return showToast(error.message, "error");
+
+  await refreshData();
+  showToast("Deleted");
+}
+
+function renderMealInputs() {
+  const container = $("mealInputs");
+  if (!data.members.length) {
+    container.innerHTML = `<div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Add members first.</div>`;
+    return;
+  }
+
+  const date = $("mealDate").value;
+  const existing = new Map(
+    data.meals.filter(m => m.date === date).map(m => [m.member_id, m])
+  );
+
+  container.innerHTML = data.members.map((m, i) => {
+    const row = existing.get(m.id);
+    return `
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 card-animate">
+        <p class="mb-3 font-bold">${escapeHTML(m.name)}</p>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="mb-1 block text-xs text-slate-500">Own Meal</label>
+            <input data-own="${m.id}" type="number" min="0" step="1"
+              value="${row ? Number(row.own_meal) : 0}"
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+          </div>
+          <div>
+            <label class="mb-1 block text-xs text-slate-500">Guest</label>
+            <input data-guest="${m.id}" type="number" min="0" step="1"
+              value="${row ? Number(row.guest_meal) : 0}"
+              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function addMeal() {
+  if (!canEdit()) return;
+
+  const date = $("mealDate").value;
+  if (!date) return showToast("Select a date", "error");
+
+  const rows = data.members.map(m => {
+    const own = Math.max(0, Number(document.querySelector(`[data-own="${m.id}"]`)?.value || 0));
+    const guest = Math.max(0, Number(document.querySelector(`[data-guest="${m.id}"]`)?.value || 0));
+    return { member_id: m.id, own_meal: own, guest_meal: guest };
+  });
+
+  for (const row of rows) {
+    const existing = data.meals.find(m => m.date === date && m.member_id === row.member_id);
+
+    let result;
+    if (existing) {
+      result = await db.from("meals").update({
+        own_meal: row.own_meal,
+        guest_meal: row.guest_meal
+      }).eq("id", existing.id);
+    } else {
+      result = await db.from("meals").insert({
+        period_key: PERIOD_KEY,
+        date,
+        member_id: row.member_id,
+        own_meal: row.own_meal,
+        guest_meal: row.guest_meal
+      });
+    }
+
+    if (result.error) {
+      showToast(result.error.message, "error");
+      return;
+    }
+  }
+
+  await refreshData();
+  showToast("Daily meals saved");
+}
+
+async function deleteMeal(id) {
+  if (!canEdit()) return;
+  if (!confirm("Delete this meal entry?")) return;
+
+  const { error } = await db.from("meals").delete().eq("id", id);
+  if (error) return showToast(error.message, "error");
+
+  await refreshData();
+  showToast("Deleted");
+}
+
+function memberName(id) {
+  return data.members.find(m => m.id === id)?.name || "Unknown";
+}
+
+function calculate() {
+  const ownByMember = {};
+  const guestByMember = {};
+
+  data.members.forEach(m => {
+    ownByMember[m.id] = 0;
+    guestByMember[m.id] = 0;
+  });
+
+  data.meals.forEach(m => {
+    if (ownByMember[m.member_id] !== undefined) {
+      ownByMember[m.member_id] += Number(m.own_meal || 0);
+      guestByMember[m.member_id] += Number(m.guest_meal || 0);
+    }
+  });
+
+  const totalFoodCost =
+    data.bazars.filter(x => x.category === "food").reduce((s,x) => s + Number(x.amount || 0), 0) +
+    data.extras.filter(x => x.category === "food").reduce((s,x) => s + Number(x.amount || 0), 0);
+
+  const totalNonFoodCost =
+    data.bazars.filter(x => x.category === "non-food").reduce((s,x) => s + Number(x.amount || 0), 0) +
+    data.extras.filter(x => x.category === "non-food").reduce((s,x) => s + Number(x.amount || 0), 0);
+
+  const totalBillableMeals = data.members.reduce((sum, m) =>
+    sum + Math.max(ownByMember[m.id] || 0, 75) + (guestByMember[m.id] || 0), 0);
+
+  const totalBoarder = data.members.length;
+  const mealRate = totalBillableMeals ? totalFoodCost / totalBillableMeals : 0;
+  const extraRate = totalBoarder ? totalNonFoodCost / totalBoarder : 0;
+
+  const depositByMember = {};
+  data.members.forEach(m => depositByMember[m.id] = 0);
+  data.deposits.forEach(d => {
+    if (depositByMember[d.member_id] !== undefined) {
+      depositByMember[d.member_id] += Number(d.amount || 0);
+    }
+  });
+
+  const rows = data.members.map(m => {
+    const own = ownByMember[m.id] || 0;
+    const guest = guestByMember[m.id] || 0;
+    const billable = Math.max(own, 75) + guest;
+    const mealCost = billable * mealRate;
+    const finalBill = mealCost + extraRate;
+    const deposit = depositByMember[m.id] || 0;
+    const balance = deposit - finalBill;
+
+    return { member: m, own, guest, billable, mealCost, extraRate, finalBill, deposit, balance };
+  });
+
+  return {
+    totalFoodCost, totalNonFoodCost, totalBillableMeals,
+    totalBoarder, mealRate, extraRate, depositByMember, rows
+  };
+}
+
+function renderMembers() {
+  $("memberList").innerHTML = data.members.length
+    ? data.members.map(m => `
+      <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 card-animate">
+        <span class="font-semibold">${escapeHTML(m.name)}</span>
+        ${canEdit() ? `<button onclick="deleteMember('${m.id}')" class="text-red-500 hover:text-red-700" title="Delete">
+          <i class="fa-solid fa-trash"></i>
+        </button>` : ""}
+      </div>
+    `).join("")
+    : `<p class="text-sm text-slate-500">No members added yet.</p>`;
+
+  $("depositMember").innerHTML = data.members.length
+    ? `<option value="">Select member</option>` + data.members.map(m =>
+      `<option value="${m.id}">${escapeHTML(m.name)}</option>`).join("")
+    : `<option value="">No members</option>`;
+}
+
+function renderBazar() {
+  $("bazarCount").textContent = `${data.bazars.length} entries`;
+
+  $("bazarTable").innerHTML = data.bazars.length
+    ? data.bazars.map(x => `
+      <tr class="border-b last:border-0">
+        <td class="p-3">${escapeHTML(x.date)}</td>
+        <td class="p-3 font-medium">${escapeHTML(x.item)}</td>
+        <td class="p-3">${x.category === "food"
+          ? '<span class="rounded-full bg-green-50 px-2 py-1 text-xs text-green-700">Food</span>'
+          : '<span class="rounded-full bg-orange-50 px-2 py-1 text-xs text-orange-700">Non-Food</span>'}</td>
+        <td class="p-3 font-semibold">${money(x.amount)}</td>
+        <td class="p-3">${canEdit() ? `<button onclick="deleteBazar('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="5" class="p-5 text-center text-slate-500">No Big Bazar entries.</td></tr>`;
+}
+
+function renderDeposits() {
+  $("depositTable").innerHTML = data.deposits.length
+    ? data.deposits.map(x => `
+      <tr class="border-b last:border-0">
+        <td class="p-3">${escapeHTML(x.date)}</td>
+        <td class="p-3 font-medium">${escapeHTML(memberName(x.member_id))}</td>
+        <td class="p-3 font-semibold">${money(x.amount)}</td>
+        <td class="p-3">${canEdit() ? `<button onclick="deleteDeposit('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="4" class="p-5 text-center text-slate-500">No deposits.</td></tr>`;
+}
+
+function renderExtras() {
+  $("extraTable").innerHTML = data.extras.length
+    ? data.extras.map(x => `
+      <tr class="border-b last:border-0">
+        <td class="p-3">${escapeHTML(x.date)}</td>
+        <td class="p-3 font-medium">${escapeHTML(x.item)}</td>
+        <td class="p-3">${x.category === "food"
+          ? '<span class="rounded-full bg-green-50 px-2 py-1 text-xs text-green-700">Food</span>'
+          : '<span class="rounded-full bg-orange-50 px-2 py-1 text-xs text-orange-700">Non-Food</span>'}</td>
+        <td class="p-3 font-semibold">${money(x.amount)}</td>
+        <td class="p-3">${canEdit() ? `<button onclick="deleteExtra('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
+      </tr>
+    `).join("")
+    : `<tr><td colspan="5" class="p-5 text-center text-slate-500">No extra expenses.</td></tr>`;
+}
+
+function renderMeals() {
+  $("mealTable").innerHTML = data.meals.length
+    ? data.meals.map(x => {
+      const billable = Math.max(Number(x.own_meal || 0), 75) + Number(x.guest_meal || 0);
+      return `
+        <tr class="border-b last:border-0">
+          <td class="p-3">${escapeHTML(x.date)}</td>
+          <td class="p-3 font-medium">${escapeHTML(memberName(x.member_id))}</td>
+          <td class="p-3">${Number(x.own_meal || 0)}</td>
+          <td class="p-3">${Number(x.guest_meal || 0)}</td>
+          <td class="p-3 font-bold">${billable}</td>
+          <td class="p-3">${canEdit() ? `<button onclick="deleteMeal('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
+        </tr>
+      `;
+    }).join("")
+    : `<tr><td colspan="6" class="p-5 text-center text-slate-500">No meal entries.</td></tr>`;
+}
+
+function renderSummary() {
+  const c = calculate();
+
+  $("summaryTable").innerHTML = c.rows.length
+    ? c.rows.map(r => {
+      const balanceClass = r.balance >= 0 ? "text-emerald-600" : "text-red-600";
+      const balanceText = r.balance >= 0
+        ? `${money(r.balance)} (পাবে)`
+        : `${money(Math.abs(r.balance))} (দিতে হবে)`;
+
+      return `
+        <tr class="border-b last:border-0">
+          <td class="p-3 font-bold">${escapeHTML(r.member.name)}</td>
+          <td class="p-3">${r.own}</td>
+          <td class="p-3">${r.guest}</td>
+          <td class="p-3 font-bold">${r.billable}</td>
+          <td class="p-3">${money(r.mealCost)}</td>
+          <td class="p-3">${money(r.extraRate)}</td>
+          <td class="p-3 font-bold">${money(r.finalBill)}</td>
+          <td class="p-3">${money(r.deposit)}</td>
+          <td class="p-3 font-bold ${balanceClass}">${balanceText}</td>
+        </tr>
+      `;
+    }).join("")
+    : `<tr><td colspan="9" class="p-5 text-center text-slate-500">No members.</td></tr>`;
+}
+
+function updateDashboard() {
+  const c = calculate();
+
+  $("totalBoarder").textContent = c.totalBoarder;
+  $("totalMeals").textContent = c.totalBillableMeals;
+  $("totalFoodCost").textContent = money(c.totalFoodCost);
+  $("mealRate").textContent = money(c.mealRate);
+  $("totalNonFoodCost").textContent = money(c.totalNonFoodCost);
+  $("extraRate").textContent = money(c.extraRate);
+
+  const totalExpense = c.totalFoodCost + c.totalNonFoodCost;
+  const totalDeposit = data.deposits.reduce((s,x) => s + Number(x.amount || 0), 0);
+
+  $("totalExpense").textContent = money(totalExpense);
+  $("totalDeposit").textContent = money(totalDeposit);
+  $("remainingMoney").textContent = money(totalDeposit - totalExpense);
+}
+
+function updateUI() {
+  $("currentMonthLabel").textContent = MONTH_LABEL;
+
+  $("loginBtn").classList.toggle("hidden", !!currentUser);
+  $("logoutBtn").classList.toggle("hidden", !currentUser);
+
+  const badge = $("roleBadge");
+  badge.classList.toggle("hidden", !currentUser);
+
+  if (currentUser) {
+    badge.textContent = profile?.role === "admin" ? "ADMIN" : "MODERATOR";
+    badge.className = `rounded-full px-3 py-1 text-xs font-bold ${
+      profile?.role === "admin"
+        ? "bg-purple-100 text-purple-700"
+        : "bg-blue-100 text-blue-700"
+    }`;
+  }
+
+  $("managerPanel").classList.toggle("hidden", !currentUser);
+
+  if (currentUser) {
+    $("loggedUserText").textContent = profile?.full_name || currentUser.email;
+    $("managerText").textContent =
+      profile?.role === "admin"
+        ? "You have full administrative control."
+        : settings?.current_manager_id === currentUser.id
+          ? "You are the currently assigned manager."
+          : "You are a moderator, but not the currently assigned manager.";
+  }
+
+  $("adminControls").classList.toggle("hidden", !isAdmin());
+  $("adminManagerBox").classList.toggle("hidden", !isAdmin());
+
+  $("monthStatusText").textContent = settings?.closed ? "Closed" : "Open";
+  $("monthStatusDot").className =
+    `h-3 w-3 rounded-full ${settings?.closed ? "bg-red-500" : "bg-emerald-500"}`;
+
+  $("closeMonthBtn").innerHTML = settings?.closed
+    ? '<i class="fa-solid fa-lock-open mr-1"></i> Re-open Month'
+    : '<i class="fa-solid fa-lock mr-1"></i> Close Month';
+
+  const editable = canEdit();
+
+  ["memberFormArea","bazarFormArea","depositFormArea","extraFormArea","mealFormArea"]
+    .forEach(id => $(id).classList.toggle("hidden", !editable));
+
+  $("viewerNotice").innerHTML = editable
+    ? `<i class="fa-solid fa-pen-to-square mr-1"></i> You can edit this month's হিসাব.`
+    : currentUser
+      ? `<i class="fa-solid fa-eye mr-1"></i> View mode. Only the assigned manager can edit; Admin has full control.`
+      : `<i class="fa-solid fa-eye mr-1"></i> Public Viewer mode. Login is required only for Admin/Moderator actions.`;
+
+  renderMembers();
+  renderBazar();
+  renderDeposits();
+  renderExtras();
+  renderMeals();
+  renderSummary();
+  updateDashboard();
+
+  if (currentUser && isAdmin()) loadModerators();
+}
+
+async function refreshData() {
+  await loadData();
+  updateUI();
+  renderMealInputs();
+}
+
+function subscribeRealtime() {
+  if (realtimeChannel) db.removeChannel(realtimeChannel);
+
+  realtimeChannel = db.channel(`mess-live-${PERIOD_KEY}`)
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "members", filter: `period_key=eq.${PERIOD_KEY}` },
+      async () => { await refreshData(); })
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "bazars", filter: `period_key=eq.${PERIOD_KEY}` },
+      async () => { await refreshData(); })
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "extra_expenses", filter: `period_key=eq.${PERIOD_KEY}` },
+      async () => { await refreshData(); })
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "deposits", filter: `period_key=eq.${PERIOD_KEY}` },
+      async () => { await refreshData(); })
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "meals", filter: `period_key=eq.${PERIOD_KEY}` },
+      async () => { await refreshData(); })
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "mess_settings", filter: "id=eq.true" },
+      async () => {
+        await loadSettings();
+        updateUI();
+      })
+    .subscribe(status => {
+      console.log("Realtime:", status);
+    });
+}
+
+async function downloadJSONBackup() {
+  const backup = {
+    exported_at: new Date().toISOString(),
+    period_key: PERIOD_KEY,
+    members: data.members,
+    bazars: data.bazars,
+    extras: data.extras,
+    deposits: data.deposits,
+    meals: data.meals
+  };
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `mess-backup-${PERIOD_KEY}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadExcelReport() {
+  const c = calculate();
+
+  const summary = c.rows.map(r => ({
+    Member: r.member.name,
+    "Own Meal": r.own,
+    "Guest Meal": r.guest,
+    "Billable Meal": r.billable,
+    "Meal Cost": Number(r.mealCost.toFixed(2)),
+    "Extra Rate": Number(r.extraRate.toFixed(2)),
+    "Final Bill": Number(r.finalBill.toFixed(2)),
+    Deposit: Number(r.deposit.toFixed(2)),
+    Balance: Number(r.balance.toFixed(2)),
+    Status: r.balance >= 0 ? "Will Get" : "Will Pay"
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const addSheet = (name, rows) =>
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), name);
+
+  addSheet("Summary", [{
+    Month: MONTH_LABEL,
+    Boarder: c.totalBoarder,
+    "Billable Meals": c.totalBillableMeals,
+    "Food Cost": c.totalFoodCost,
+    "Meal Rate": c.mealRate,
+    "Non-Food Cost": c.totalNonFoodCost,
+    "Extra Rate": c.extraRate,
+    "Total Deposit": data.deposits.reduce((s,x)=>s+Number(x.amount||0),0)
+  }]);
+
+  addSheet("Members", data.members.map(x => ({Name:x.name})));
+  addSheet("Big Bazar", data.bazars.map(x => ({
+    Date:x.date, Item:x.item, Category:x.category, Amount:Number(x.amount)
+  })));
+  addSheet("Extra Expenses", data.extras.map(x => ({
+    Date:x.date, Item:x.item, Category:x.category, Amount:Number(x.amount)
+  })));
+  addSheet("Deposits", data.deposits.map(x => ({
+    Date:x.date, Member:memberName(x.member_id), Amount:Number(x.amount)
+  })));
+  addSheet("Meals", data.meals.map(x => ({
+    Date:x.date, Member:memberName(x.member_id),
+    "Own Meal":Number(x.own_meal),
+    "Guest Meal":Number(x.guest_meal),
+    "Billable Meal":Math.max(Number(x.own_meal),75)+Number(x.guest_meal)
+  })));
+  addSheet("Final Bill", summary);
+
+  XLSX.writeFile(wb, `mess-report-${PERIOD_KEY}.xlsx`);
+}
+
+async function initialize() {
+  await loadSession();
+  await loadSettings();
+  await loadData();
+
+  setupDateInputs();
+  updateUI();
+  renderMealInputs();
+  subscribeRealtime();
+}
+
+db.auth.onAuthStateChange(async (_event, session) => {
+  currentUser = session?.user || null;
+  if (currentUser) {
+    await loadSession();
+  } else {
+    profile = null;
+  }
+  await loadSettings();
+  await loadData();
+  updateUI();
+  renderMealInputs();
+});
+
+initialize();
+</script>
 </body>
 </html>
