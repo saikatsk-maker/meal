@@ -28,6 +28,17 @@
     .btn:hover { transform: translateY(-1px); }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    .nav-tile { display:flex; min-height:66px; flex-direction:column; align-items:center; justify-content:center; gap:7px; border:1px solid #e2e8f0; border-radius:16px; background:#f8fafc; padding:10px 6px; color:#475569; font-size:12px; font-weight:800; transition:all .22s ease; }
+    .nav-tile i { font-size:18px; }
+    .nav-tile:hover { transform:translateY(-2px); border-color:#93c5fd; background:#eff6ff; box-shadow:0 8px 20px rgba(37,99,235,.08); }
+    .nav-tile.nav-active { border-color:#2563eb; background:linear-gradient(135deg,#2563eb,#4f46e5); color:white; box-shadow:0 8px 20px rgba(37,99,235,.2); }
+    .nav-tile.nav-active i { color:white !important; }
+    .nav-report { border-radius:12px; background:#ecfdf5; padding:10px 14px; color:#047857; font-size:13px; font-weight:800; transition:all .2s ease; }
+    .nav-report:hover { background:#d1fae5; transform:translateY(-1px); }
+    .nav-report.nav-active { background:#047857; color:white; }
+    @media (max-width:420px) { .nav-tile { min-height:60px; font-size:11px; } .nav-tile i { font-size:16px; } }
+
     .table-wrap { overflow-x: auto; }
     input, select {
       outline: none;
@@ -142,6 +153,24 @@
       </div>
     </section>
 
+    <!-- QUICK NAVIGATION -->
+    <section class="mb-6 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+      <div class="mb-3 flex items-center justify-between gap-3 px-1">
+        <div><p class="text-xs font-bold uppercase tracking-[.18em] text-blue-600">Quick navigation</p><h2 class="text-lg font-extrabold text-slate-800">মেসের হিসাব</h2></div>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500"><i class="fa-solid fa-bolt mr-1 text-amber-500"></i> Quick access</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
+        <button type="button" data-nav="overview" onclick="showPanel('overview')" class="nav-tile nav-active"><i class="fa-solid fa-chart-pie"></i><span>Overview</span></button>
+        <button type="button" data-nav="membersPanel" onclick="showPanel('membersPanel')" class="nav-tile"><i class="fa-solid fa-users text-blue-600"></i><span>Members</span></button>
+        <button type="button" data-nav="bazarPanel" onclick="showPanel('bazarPanel')" class="nav-tile"><i class="fa-solid fa-cart-shopping text-emerald-600"></i><span>Big Bazar</span></button>
+        <button type="button" data-nav="depositsPanel" onclick="showPanel('depositsPanel')" class="nav-tile"><i class="fa-solid fa-money-bill-transfer text-sky-600"></i><span>Deposits</span></button>
+        <button type="button" data-nav="expensesPanel" onclick="showPanel('expensesPanel')" class="nav-tile"><i class="fa-solid fa-receipt text-orange-600"></i><span>Extra Expenses</span></button>
+        <button type="button" data-nav="mealsPanel" onclick="showPanel('mealsPanel')" class="nav-tile"><i class="fa-solid fa-bowl-food text-purple-600"></i><span>Daily Meals</span></button>
+        <button type="button" data-nav="summaryPanel" onclick="showPanel('summaryPanel')" class="nav-tile"><i class="fa-solid fa-file-invoice-dollar text-indigo-600"></i><span>Final Bill</span></button>
+      </div>
+      <div class="mt-2 flex justify-end"><button type="button" data-nav="excelPanel" onclick="showPanel('excelPanel')" class="nav-report"><i class="fa-solid fa-file-excel mr-2"></i>Excel Report</button></div>
+    </section>
+
     <!-- DASHBOARD -->
     <section class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
       <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
@@ -212,7 +241,7 @@
     </section>
 
     <!-- MEMBERS -->
-    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <section id="membersPanel" data-nav-panel="true" class="hidden fade-in class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <div class="mb-4 flex items-center justify-between">
         <div>
           <h2 class="text-lg font-bold"><i class="fa-solid fa-users text-blue-600 mr-1"></i> Members</h2>
@@ -235,7 +264,7 @@
     </section>
 
     <!-- BIG BAZAR -->
-    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <section id="bazarPanel" data-nav-panel="true" class="hidden fade-in class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 class="text-lg font-bold"><i class="fa-solid fa-cart-shopping text-emerald-600 mr-1"></i> Big Bazar</h2>
@@ -274,7 +303,7 @@
     </section>
 
     <!-- DEPOSIT -->
-    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <section id="depositsPanel" data-nav-panel="true" class="hidden fade-in class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-money-bill-transfer text-blue-600 mr-1"></i> Deposits</h2>
 
       <div id="depositFormArea" class="mb-5 hidden">
@@ -301,7 +330,7 @@
     </section>
 
     <!-- EXTRA EXPENSE -->
-    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <section id="expensesPanel" data-nav-panel="true" class="hidden fade-in class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-receipt text-orange-600 mr-1"></i> Extra Expenses</h2>
 
       <div id="extraFormArea" class="mb-5 hidden">
@@ -334,7 +363,7 @@
     </section>
 
     <!-- DAILY MEALS -->
-    <section class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <section id="mealsPanel" data-nav-panel="true" class="hidden fade-in class="mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <div class="mb-4">
         <h2 class="text-lg font-bold"><i class="fa-solid fa-bowl-food text-purple-600 mr-1"></i> Daily Meals</h2>
         <p class="text-sm text-slate-500">
@@ -368,7 +397,7 @@
     </section>
 
     <!-- FINAL SUMMARY -->
-    <section class="mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <section id="summaryPanel" data-nav-panel="true" class="hidden fade-in class="mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 class="text-lg font-bold"><i class="fa-solid fa-file-invoice-dollar text-indigo-600 mr-1"></i> Final Bill Summary</h2>
@@ -397,19 +426,27 @@
     </section>
 
     <!-- BACKUP / REPORT -->
-    <section class="mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
-      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-database text-slate-700 mr-1"></i> Backup & Report</h2>
-      <div class="flex flex-wrap gap-2">
-        <button onclick="downloadJSONBackup()"
-          class="btn rounded-xl bg-slate-800 px-4 py-3 text-sm font-bold text-white hover:bg-slate-900">
-          <i class="fa-solid fa-download mr-1"></i> JSON Backup
-        </button>
-        <button onclick="downloadExcelReport()"
-          class="btn rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white hover:bg-green-700">
-          <i class="fa-solid fa-file-excel mr-1"></i> Excel Report
-        </button>
-      </div>
-    </section>
+   <!-- EXCEL REPORT -->
+<section id="excelPanel" data-nav-panel="true" class="hidden fade-in mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+  <h2 class="mb-2 text-lg font-bold text-slate-800">
+    <i class="fa-solid fa-file-excel text-green-600 mr-2"></i>
+    Excel Report
+  </h2>
+
+  <p class="mb-4 text-sm text-slate-500">
+    Download this month's complete mess accounting report in Excel format.
+  </p>
+
+  <button
+    onclick="downloadExcelReport()"
+    class="btn rounded-xl bg-green-600 px-5 py-3 text-sm font-bold text-white
+           shadow-md transition-all duration-300 hover:bg-green-700
+           hover:shadow-lg active:scale-95"
+  >
+    <i class="fa-solid fa-file-excel mr-2"></i>
+    Download Excel Report
+  </button>
+</section>
 
   </main>
 
@@ -1227,6 +1264,24 @@ function downloadExcelReport() {
   addSheet("Final Bill", summary);
 
   XLSX.writeFile(wb, `mess-report-${PERIOD_KEY}.xlsx`);
+}
+
+
+function showPanel(panelId) {
+  document.querySelectorAll('[data-nav-panel="true"]').forEach(panel => {
+    panel.classList.toggle('hidden', panel.id !== panelId);
+  });
+  document.querySelectorAll('[data-nav]').forEach(button => {
+    const active = button.dataset.nav === panelId || (panelId === 'overview' && button.dataset.nav === 'overview');
+    button.classList.toggle('nav-active', active);
+  });
+  if (panelId === 'overview') {
+    document.querySelectorAll('[data-nav-panel="true"]').forEach(panel => panel.classList.add('hidden'));
+  }
+  const nav = document.querySelector('[data-nav="overview"]');
+  if (nav) nav.classList.toggle('nav-active', panelId === 'overview');
+  const target = document.querySelector('.quick-nav-anchor');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function initialize() {
