@@ -12,8 +12,45 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <style>
-    html { scroll-behavior: smooth; }
-    body { background: #f8fafc; }
+
+    /* Nazmahal branded welcome / loading screen */
+    #nazmahalLoader{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:24px;background:radial-gradient(circle at 50% 42%,rgba(99,102,241,.20),transparent 33%),linear-gradient(135deg,#0b1228 0%,#15143b 48%,#082f35 100%);opacity:1;visibility:visible;transition:opacity .65s ease,visibility .65s ease}
+    #nazmahalLoader.loader-hidden{opacity:0;visibility:hidden;pointer-events:none}
+    #nazmahalLoader:before,#nazmahalLoader:after{content:"";position:absolute;width: min(78vw,520px);aspect-ratio:1;border:1px solid rgba(165,180,252,.14);border-radius:50%;animation:loaderOrbit 12s linear infinite}
+    #nazmahalLoader:after{width:min(58vw,370px);border-color:rgba(94,234,212,.18);animation-direction:reverse;animation-duration:9s}
+    .loader-content{position:relative;z-index:1;width:min(100%,420px);text-align:center;color:#fff;animation:loaderRise .8s cubic-bezier(.2,.8,.2,1) both}
+    .loader-emblem{position:relative;display:grid;place-items:center;width:86px;height:86px;margin:0 auto 25px;border-radius:27px;background:linear-gradient(135deg,#818cf8,#6366f1 48%,#2dd4bf);box-shadow:0 0 45px rgba(99,102,241,.4),inset 0 1px 0 rgba(255,255,255,.5);animation:emblemFloat 2.8s ease-in-out infinite}
+    .loader-emblem:before{content:"";position:absolute;inset:-7px;border:1px solid rgba(165,180,252,.4);border-radius:32px;animation:emblemPulse 2s ease-out infinite}
+    .loader-emblem i{font-size:34px;color:white;text-shadow:0 3px 12px rgba(15,23,42,.22)}
+    .loader-brand{margin:0;font-size:clamp(30px,7vw,43px);font-weight:900;letter-spacing:.16em;line-height:1.2;background:linear-gradient(90deg,#fff 0%,#c7d2fe 35%,#99f6e4 68%,#fff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:brandShine 3s linear infinite}
+    .loader-tagline{margin:12px 0 28px;color:#cbd5e1;font-size:13px;letter-spacing:.12em}
+    .loader-track{width:190px;height:4px;margin:0 auto 14px;border-radius:999px;background:rgba(255,255,255,.13);overflow:hidden}
+    .loader-progress{height:100%;width:40%;border-radius:999px;background:linear-gradient(90deg,#818cf8,#5eead4);box-shadow:0 0 15px rgba(94,234,212,.65);animation:loaderProgress 1.5s ease-in-out infinite}
+    .loader-caption{color:#a5b4fc;font-size:11px;letter-spacing:.18em;text-transform:uppercase}
+    @keyframes loaderOrbit{to{transform:rotate(360deg) scale(1.04)}}
+    @keyframes loaderRise{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes emblemFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+    @keyframes emblemPulse{0%{transform:scale(.94);opacity:.7}100%{transform:scale(1.18);opacity:0}}
+    @keyframes brandShine{to{background-position:200% center}}
+    @keyframes loaderProgress{0%{transform:translateX(-120%)}100%{transform:translateX(370%)}}
+    @media(prefers-reduced-motion:reduce){#nazmahalLoader:before,#nazmahalLoader:after,.loader-content,.loader-emblem,.loader-emblem:before,.loader-brand,.loader-progress{animation:none!important}#nazmahalLoader{transition:none}}
+
+    html { scroll-behavior: smooth; min-height: 100%; }
+    body {
+      background: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Keep the footer at the bottom of short pages without fixing it over content. */
+    body > main {
+      flex: 1 0 auto;
+      width: 100%;
+    }
+    body > footer.site-footer {
+      flex-shrink: 0;
+      margin-top: auto;
+    }
     .glass { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); }
     .card-animate {
       animation: cardIn .35s ease both;
@@ -24,6 +61,14 @@
     }
     .fade-in { animation: fadeIn .35s ease both; }
     @keyframes fadeIn { from {opacity:0} to {opacity:1} }
+    /* Gentle reveal animation while scrolling */
+    .scroll-reveal { opacity: 0; transform: translateY(18px); transition: opacity .65s ease, transform .65s cubic-bezier(.2,.7,.2,1); }
+    .scroll-reveal.is-visible { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto !important; }
+      .scroll-reveal, .scroll-reveal.is-visible { opacity: 1; transform: none; transition: none; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
     .btn { transition: .2s ease; }
     .btn:hover { transform: translateY(-1px); }
     .spin { animation: spin 1s linear infinite; }
@@ -215,10 +260,159 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
-  </style>
+  
+    /* Mobile-first polished layouts for data-entry sections */
+    @media (max-width: 640px) {
+      #bazarPanel, #depositsPanel, #expensesPanel, #mealsPanel, #summaryPanel, #membersPanel, #excelPanel {
+        padding: 14px !important;
+        border-radius: 18px !important;
+        margin-bottom: 18px !important;
+      }
+      #bazarPanel h2, #depositsPanel h2, #expensesPanel h2, #mealsPanel h2, #summaryPanel h2 {
+        font-size: 17px;
+        line-height: 1.35;
+      }
+      #bazarFormArea .grid, #depositFormArea .grid, #extraFormArea .grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      #bazarFormArea input, #bazarFormArea select, #depositFormArea input, #depositFormArea select,
+      #extraFormArea input, #extraFormArea select, #mealFormArea input, #mealFormArea select,
+      #bazarFormArea button, #depositFormArea button, #extraFormArea button, #mealFormArea button {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      #bazarFormArea .flex, #extraFormArea .flex { min-width: 0; }
+      #mealInputs { grid-template-columns: minmax(0, 1fr) !important; }
+      /* Convert wide data tables into readable stacked cards on phones */
+      #bazarPanel .table-wrap, #depositsPanel .table-wrap, #expensesPanel .table-wrap, #mealsPanel .table-wrap {
+        overflow: visible !important;
+      }
+      #bazarPanel table, #depositsPanel table, #expensesPanel table, #mealsPanel table {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      #bazarPanel thead, #depositsPanel thead, #expensesPanel thead, #mealsPanel thead {
+        display: none;
+      }
+      #bazarPanel tbody, #depositsPanel tbody, #expensesPanel tbody, #mealsPanel tbody {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+        width: 100%;
+      }
+      #bazarPanel tbody tr, #depositsPanel tbody tr, #expensesPanel tbody tr, #mealsPanel tbody tr {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        background: linear-gradient(145deg, #ffffff, #f8fbff);
+        box-shadow: 0 5px 16px rgba(15, 23, 42, .055);
+      }
+      #bazarPanel tbody td, #depositsPanel tbody td, #expensesPanel tbody td, #mealsPanel tbody td {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        min-width: 0;
+        padding: 9px 0 !important;
+        border-bottom: 1px solid #edf2f7;
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+      #bazarPanel tbody td:last-child, #depositsPanel tbody td:last-child,
+      #expensesPanel tbody td:last-child, #mealsPanel tbody td:last-child { border-bottom: 0; }
+      #bazarPanel tbody td::before, #depositsPanel tbody td::before,
+      #expensesPanel tbody td::before, #mealsPanel tbody td::before {
+        flex: 0 0 34%;
+        max-width: 42%;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .045em;
+        text-align: left;
+        text-transform: uppercase;
+      }
+      #bazarPanel tbody td:nth-child(1)::before, #expensesPanel tbody td:nth-child(1)::before { content: "Date"; }
+      #bazarPanel tbody td:nth-child(2)::before, #expensesPanel tbody td:nth-child(2)::before { content: "Item"; }
+      #bazarPanel tbody td:nth-child(3)::before, #expensesPanel tbody td:nth-child(3)::before { content: "Category"; }
+      #bazarPanel tbody td:nth-child(4)::before, #expensesPanel tbody td:nth-child(4)::before { content: "Amount"; }
+      #bazarPanel tbody td:nth-child(5)::before, #expensesPanel tbody td:nth-child(5)::before { content: "Action"; }
+      #depositsPanel tbody td:nth-child(1)::before { content: "Date"; }
+      #depositsPanel tbody td:nth-child(2)::before { content: "Member"; }
+      #depositsPanel tbody td:nth-child(3)::before { content: "Amount"; }
+      #depositsPanel tbody td:nth-child(4)::before { content: "Action"; }
+      #mealsPanel tbody td:nth-child(1)::before { content: "Date"; }
+      #mealsPanel tbody td:nth-child(2)::before { content: "Member"; }
+      #mealsPanel tbody td:nth-child(3)::before { content: "Own Meals"; }
+      #mealsPanel tbody td:nth-child(4)::before { content: "Guest Meals"; }
+      #mealsPanel tbody td:nth-child(5)::before { content: "Billable"; }
+      #mealsPanel tbody td:nth-child(6)::before { content: "Action"; }
+      #bazarPanel tbody td button, #depositsPanel tbody td button, #expensesPanel tbody td button, #mealsPanel tbody td button {
+        max-width: 100%;
+      }
+      /* Keep the summary member cards comfortable on narrow screens */
+      #summaryPanel .table-wrap { overflow-x: auto; }
+      #summaryPanel table { min-width: 0 !important; }
+    }
+    @media (max-width: 380px) {
+      #bazarPanel, #depositsPanel, #expensesPanel, #mealsPanel, #summaryPanel { padding: 11px !important; }
+      #bazarPanel tbody tr, #depositsPanel tbody tr, #expensesPanel tbody tr, #mealsPanel tbody tr { padding: 7px 10px; }
+      #bazarPanel tbody td::before, #depositsPanel tbody td::before,
+      #expensesPanel tbody td::before, #mealsPanel tbody td::before { flex-basis: 31%; font-size: 9px; }
+    }
+
+    /* Scroll-triggered reveal: sections and their content gently rise into view */
+    .scroll-reveal {
+      opacity: 0;
+      transform: translateY(26px) scale(.985);
+      transition: opacity .72s ease, transform .72s cubic-bezier(.16, 1, .3, 1);
+      will-change: opacity, transform;
+    }
+    .scroll-reveal.is-visible { opacity: 1; transform: translateY(0) scale(1); }
+    .scroll-reveal.reveal-delay-1 { transition-delay: .08s; }
+    .scroll-reveal.reveal-delay-2 { transition-delay: .16s; }
+    .scroll-reveal.reveal-delay-3 { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) {
+      .scroll-reveal, .scroll-reveal.is-visible { opacity: 1; transform: none; transition: none; will-change: auto; }
+    }
+
+</style>
 </head>
 
 <body class="text-slate-800">
+
+  <div id="nazmahalLoader" role="status" aria-live="polite" aria-label="Loading Nazmahal Mess Manager">
+    <div class="loader-content">
+      <div class="loader-emblem" aria-hidden="true"><i class="fa-solid fa-house-chimney-user"></i></div>
+      <h1 class="loader-brand">NAZMAHAL</h1>
+      <p class="loader-tagline">MESS MEAL MANAGER</p>
+      <div class="loader-track" aria-hidden="true"><div class="loader-progress"></div></div>
+      <div class="loader-caption">Preparing your dashboard</div>
+    </div>
+  </div>
+  <script>
+    (function(){
+      const loader = document.getElementById('nazmahalLoader');
+      if (!loader) return;
+      let dismissed = false;
+      function dismissLoader(){
+        if (dismissed) return;
+        dismissed = true;
+        loader.classList.add('loader-hidden');
+        window.setTimeout(() => loader.remove(), 750);
+      }
+      // Keep the branded intro visible briefly, but never block a slow connection indefinitely.
+      window.addEventListener('load', () => window.setTimeout(dismissLoader, 1500), { once:true });
+      window.setTimeout(dismissLoader, 6500);
+    })();
+  </script>
+
 
   <!-- LOGIN MODAL -->
   <div id="loginModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 p-4 items-center justify-center">
@@ -297,7 +491,7 @@
   <main class="mx-auto max-w-7xl px-4 py-5 sm:py-8">
 
     <!-- STATUS -->
-    <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm card-animate">
+    <section id="accountStatusPanel" class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm card-animate">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p class="text-sm text-slate-500">Account status</p>
@@ -325,7 +519,7 @@
     <!-- QUICK NAVIGATION -->
     <section class="mb-6 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
       <div class="mb-3 flex items-center justify-between gap-3 px-1">
-        <div><p class="text-xl font-bold uppercase tracking-[.18em] text-blue-600">Explore at a Glance</p><h2 class="text-lg font-extrabold text-slate-800"></h2></div>
+        <div><p class="text-xL font-bold uppercase tracking-[.18em] text-blue-600">Explore at a Glance</p><h2 class="text-lg font-extrabold text-slate-800"></h2></div>
         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500"><i class="fa-solid fa-bolt mr-1 text-amber-500"></i> Quick access</span>
       </div>
       <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
@@ -586,7 +780,8 @@
         <i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> নিজের হিসাব দেখতে তালিকা থেকে নিজের নাম নির্বাচন করুন।
       </div>
 
-      <div class="table-wrap">
+      <div id="summaryCards" class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:hidden"></div>
+      <div class="table-wrap hidden md:block">
         <table class="w-full min-w-[1050px] text-left text-sm">
           <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
@@ -1256,28 +1451,26 @@ function renderSummary() {
       : `<i class="fa-solid fa-eye mr-1 text-indigo-500"></i> সব সদস্যের হিসাব দেখা যাচ্ছে। চাইলে নাম নির্বাচন করে একজনের হিসাবও দেখতে পারবেন।`;
   }
 
-  $("summaryTable").innerHTML = visibleRows.length
-    ? visibleRows.map(r => {
-      const balanceClass = r.balance >= 0 ? "text-emerald-600" : "text-red-600";
-      const balanceText = r.balance >= 0
-        ? `${money(r.balance)} (পাবে)`
-        : `${money(Math.abs(r.balance))} (দিতে হবে)`;
-
-      return `
-        <tr class="border-b last:border-0">
-          <td class="p-3 font-bold">${escapeHTML(r.member.name)}</td>
-          <td class="p-3">${r.own}</td>
-          <td class="p-3">${r.guest}</td>
-          <td class="p-3 font-bold">${r.billable}</td>
-          <td class="p-3">${money(r.mealCost)}</td>
-          <td class="p-3">${money(r.extraRate)}</td>
-          <td class="p-3 font-bold">${money(r.finalBill)}</td>
-          <td class="p-3">${money(r.deposit)}</td>
-          <td class="p-3 font-bold ${balanceClass}">${balanceText}</td>
-        </tr>
-      `;
-    }).join("")
-    : `<tr><td colspan="9" class="p-5 text-center text-slate-500">${isReadOnly && !selectedId ? "নিজের হিসাব দেখতে উপরের তালিকা থেকে নাম নির্বাচন করুন।" : "No members."}</td></tr>`;
+  const emptyMessage = isReadOnly && !selectedId
+    ? "নিজের হিসাব দেখতে উপরের তালিকা থেকে নাম নির্বাচন করুন।"
+    : "No members.";
+  if (!visibleRows.length) {
+    $("summaryTable").innerHTML = `<tr><td colspan="9" class="p-5 text-center text-slate-500">${emptyMessage}</td></tr>`;
+    $("summaryCards").innerHTML = `<div class="rounded-2xl border border-dashed border-slate-300 bg-white/80 p-5 text-center text-sm text-slate-500">${emptyMessage}</div>`;
+    return;
+  }
+  $("summaryTable").innerHTML = visibleRows.map(r => {
+    const balanceClass = r.balance >= 0 ? "text-emerald-600" : "text-red-600";
+    const balanceText = r.balance >= 0 ? `${money(r.balance)} (পাবে)` : `${money(Math.abs(r.balance))} (দিতে হবে)`;
+    return `<tr class="border-b last:border-0"><td class="p-3 font-bold">${escapeHTML(r.member.name)}</td><td class="p-3">${r.own}</td><td class="p-3">${r.guest}</td><td class="p-3 font-bold">${r.billable}</td><td class="p-3">${money(r.mealCost)}</td><td class="p-3">${money(r.extraRate)}</td><td class="p-3 font-bold">${money(r.finalBill)}</td><td class="p-3">${money(r.deposit)}</td><td class="p-3 font-bold ${balanceClass}">${balanceText}</td></tr>`;
+  }).join("");
+  $("summaryCards").innerHTML = visibleRows.map(r => {
+    const positive = r.balance >= 0;
+    const balanceClass = positive ? "text-emerald-700 bg-emerald-50 border-emerald-100" : "text-red-700 bg-red-50 border-red-100";
+    const balanceText = positive ? `${money(r.balance)} পাবে` : `${money(Math.abs(r.balance))} দিতে হবে`;
+    const item = (label, value, extra = "") => `<div class="flex items-center justify-between gap-3 border-b border-slate-100 py-2 last:border-0"><span class="text-xs text-slate-500">${label}</span><span class="text-sm font-semibold text-slate-800 ${extra}">${value}</span></div>`;
+    return `<article class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm"><div class="flex items-center justify-between gap-3 bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 px-4 py-3 text-white"><div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-widest text-white/75">Member</p><h3 class="truncate text-base font-extrabold">${escapeHTML(r.member.name)}</h3></div><span class="rounded-full bg-white/20 px-3 py-1 text-xs font-bold">${r.billable} billable</span></div><div class="p-4">${item("Own meals", r.own)}${item("Guest meals", r.guest)}${item("Meal cost", money(r.mealCost))}${item("Extra cost", money(r.extraRate))}<div class="my-2 rounded-xl bg-indigo-50 px-3 py-3"><p class="text-xs text-indigo-600">Final Bill</p><p class="text-xl font-extrabold text-indigo-800">${money(r.finalBill)}</p></div>${item("Deposit", money(r.deposit))}<div class="mt-3 rounded-xl border px-3 py-3 ${balanceClass}"><p class="text-xs opacity-80">Balance</p><p class="text-lg font-extrabold">${balanceText}</p></div></div></article>`;
+  }).join("");
 }
 
 function updateDashboard() {
@@ -1300,6 +1493,8 @@ function updateDashboard() {
 
 function updateUI() {
   $("currentMonthLabel").textContent = MONTH_LABEL;
+  // Account status is for signed-in Admin/Moderator accounts only; public viewers do not need it.
+  $("accountStatusPanel").classList.toggle("hidden", !currentUser);
 
   $("loginBtn").classList.toggle("hidden", !!currentUser);
   $("logoutBtn").classList.toggle("hidden", !currentUser);
@@ -1545,5 +1740,61 @@ initialize();
   (function(){var year=document.getElementById('footerYear');if(year)year.textContent=new Date().getFullYear();})();
 </script>
 
+<script>
+  // Elements softly rise into view when the visitor scrolls down to them.
+  document.addEventListener("DOMContentLoaded", () => {
+    const selector = [
+      "main > section",
+      "main [data-nav-panel='true']",
+      "main .table-wrap",
+      "main form",
+      "main .grid > div",
+      "main .rounded-2xl"
+    ].join(",");
+    const targets = [...new Set(document.querySelectorAll(selector))];
+    targets.forEach((el, i) => {
+      if (!el.classList.contains("hidden")) {
+        el.classList.add("scroll-reveal");
+        el.classList.add("reveal-delay-" + ((i % 3) + 1));
+      }
+    });
+    if (!("IntersectionObserver" in window)) {
+      targets.forEach(el => el.classList.add("is-visible"));
+      return;
+    }
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.classList.contains("hidden")) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.06, rootMargin: "0px 0px -45px 0px" });
+    targets.forEach(el => {
+      if (!el.classList.contains("hidden")) observer.observe(el);
+    });
+
+    // When a navigation panel is opened, animate its contents into view too.
+    const originalShowPanel = window.showPanel;
+    if (typeof originalShowPanel === "function") {
+      window.showPanel = function(panelId) {
+        originalShowPanel(panelId);
+        const panel = document.getElementById(panelId === "overview" ? "overviewPanel" : panelId);
+        if (!panel) return;
+        panel.classList.remove("is-visible");
+        requestAnimationFrame(() => {
+          panel.classList.add("is-visible");
+          panel.querySelectorAll(".table-wrap, .grid > div, .rounded-2xl").forEach((el, i) => {
+            el.classList.add("scroll-reveal", "reveal-delay-" + ((i % 3) + 1));
+            el.classList.remove("is-visible");
+            requestAnimationFrame(() => {
+              if (!el.classList.contains("hidden")) el.classList.add("is-visible");
+            });
+          });
+        });
+      };
+    }
+  });
+</script>
 </body>
 </html>
