@@ -35,22 +35,8 @@
     @keyframes loaderProgress{0%{transform:translateX(-120%)}100%{transform:translateX(370%)}}
     @media(prefers-reduced-motion:reduce){#nazmahalLoader:before,#nazmahalLoader:after,.loader-content,.loader-emblem,.loader-emblem:before,.loader-brand,.loader-progress{animation:none!important}#nazmahalLoader{transition:none}}
 
-    html { scroll-behavior: smooth; min-height: 100%; }
-    body {
-      background: #f8fafc;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    /* Keep the footer at the bottom of short pages without fixing it over content. */
-    body > main {
-      flex: 1 0 auto;
-      width: 100%;
-    }
-    body > footer.site-footer {
-      flex-shrink: 0;
-      margin-top: auto;
-    }
+    html { scroll-behavior: smooth; }
+    body { background: #f8fafc; }
     .glass { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); }
     .card-animate {
       animation: cardIn .35s ease both;
@@ -356,7 +342,21 @@
       #bazarPanel tbody td button, #depositsPanel tbody td button, #expensesPanel tbody td button, #mealsPanel tbody td button {
         max-width: 100%;
       }
-      /* Keep the summary member cards comfortable on narrow screens */
+      /* Final Bill: reliable desktop table / mobile cards switching */
+    #summaryPanel .summary-cards-view { display: none !important; }
+    #summaryPanel .summary-table-view { display: block !important; width: 100%; min-width: 0; }
+    #summaryPanel .summary-table-view table { width: 100%; }
+    @media (max-width: 767px) {
+      #summaryPanel .summary-cards-view { display: grid !important; }
+      #summaryPanel .summary-table-view { display: none !important; }
+    }
+    @media (min-width: 768px) {
+      #summaryPanel .summary-cards-view { display: none !important; }
+      #summaryPanel .summary-table-view { display: block !important; overflow-x: auto; }
+      #summaryPanel .summary-table-view table { min-width: 1050px; }
+    }
+
+    /* Keep the summary member cards comfortable on narrow screens */
       #summaryPanel .table-wrap { overflow-x: auto; }
       #summaryPanel table { min-width: 0 !important; }
     }
@@ -519,7 +519,7 @@
     <!-- QUICK NAVIGATION -->
     <section class="mb-6 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
       <div class="mb-3 flex items-center justify-between gap-3 px-1">
-        <div><p class="text-xL font-bold uppercase tracking-[.18em] text-blue-600">Explore at a Glance</p><h2 class="text-lg font-extrabold text-slate-800"></h2></div>
+        <div><p class="text-xl font-bold uppercase tracking-[.18em] text-blue-600">Explore at a Glance</p><h2 class="text-lg font-extrabold text-slate-800"></h2></div>
         <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500"><i class="fa-solid fa-bolt mr-1 text-amber-500"></i> Quick access</span>
       </div>
       <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
@@ -780,8 +780,8 @@
         <i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> নিজের হিসাব দেখতে তালিকা থেকে নিজের নাম নির্বাচন করুন।
       </div>
 
-      <div id="summaryCards" class="grid grid-cols-1 gap-3 sm:grid-cols-2 md:hidden"></div>
-      <div class="table-wrap hidden md:block">
+      <div id="summaryCards" class="summary-cards-view grid grid-cols-1 gap-3 sm:grid-cols-2"></div>
+      <div class="table-wrap summary-table-view">
         <table class="w-full min-w-[1050px] text-left text-sm">
           <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
@@ -1735,6 +1735,19 @@ initialize();
   @keyframes footerHeartbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
   @media(max-width:480px){.site-footer{padding:27px 12px 22px}.footer-author{font-size:16px}.footer-copyright{line-height:1.8}}
   @media(prefers-reduced-motion:reduce){.site-footer,.footer-heart{animation:none}.footer-author{transition:none}}
+
+    /* FINAL BILL DISPLAY FIX: cards on mobile only, table on PC */
+    @media screen and (min-width: 768px) {
+      #summaryPanel #summaryCards,
+      #summaryPanel .summary-cards-view { display: none !important; visibility: hidden !important; }
+      #summaryPanel .summary-table-view { display: block !important; visibility: visible !important; width: 100% !important; }
+      #summaryPanel .summary-table-view table { display: table !important; width: 100% !important; min-width: 1050px !important; }
+    }
+    @media screen and (max-width: 767px) {
+      #summaryPanel #summaryCards,
+      #summaryPanel .summary-cards-view { display: grid !important; visibility: visible !important; }
+      #summaryPanel .summary-table-view { display: none !important; visibility: hidden !important; }
+    }
 </style>
 <script>
   (function(){var year=document.getElementById('footerYear');if(year)year.textContent=new Date().getFullYear();})();
