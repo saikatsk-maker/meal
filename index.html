@@ -1,351 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mess Meal Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#123c76" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>নাজমহল - মেস মিল ম্যানেজার</title>
 
+  <!-- বাইরের রিসোর্স -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-
-    /* Nazmahal branded welcome / loading screen */
-    #nazmahalLoader{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:24px;background:radial-gradient(circle at 50% 42%,rgba(99,102,241,.20),transparent 33%),linear-gradient(135deg,#0b1228 0%,#15143b 48%,#082f35 100%);opacity:1;visibility:visible;transition:opacity .65s ease,visibility .65s ease}
-    #nazmahalLoader.loader-hidden{opacity:0;visibility:hidden;pointer-events:none}
-    #nazmahalLoader:before,#nazmahalLoader:after{content:"";position:absolute;width: min(78vw,520px);aspect-ratio:1;border:1px solid rgba(165,180,252,.14);border-radius:50%;animation:loaderOrbit 12s linear infinite}
-    #nazmahalLoader:after{width:min(58vw,370px);border-color:rgba(94,234,212,.18);animation-direction:reverse;animation-duration:9s}
-    .loader-content{position:relative;z-index:1;width:min(100%,420px);text-align:center;color:#fff;animation:loaderRise .8s cubic-bezier(.2,.8,.2,1) both}
-    .loader-emblem{position:relative;display:grid;place-items:center;width:86px;height:86px;margin:0 auto 25px;border-radius:27px;background:linear-gradient(135deg,#818cf8,#6366f1 48%,#2dd4bf);box-shadow:0 0 45px rgba(99,102,241,.4),inset 0 1px 0 rgba(255,255,255,.5);animation:emblemFloat 2.8s ease-in-out infinite}
-    .loader-emblem:before{content:"";position:absolute;inset:-7px;border:1px solid rgba(165,180,252,.4);border-radius:32px;animation:emblemPulse 2s ease-out infinite}
-    .loader-emblem i{font-size:34px;color:white;text-shadow:0 3px 12px rgba(15,23,42,.22)}
-    .loader-brand{margin:0;font-size:clamp(30px,7vw,43px);font-weight:900;letter-spacing:.16em;line-height:1.2;background:linear-gradient(90deg,#fff 0%,#c7d2fe 35%,#99f6e4 68%,#fff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:brandShine 3s linear infinite}
-    .loader-tagline{margin:12px 0 28px;color:#cbd5e1;font-size:13px;letter-spacing:.12em}
-    .loader-track{width:190px;height:4px;margin:0 auto 14px;border-radius:999px;background:rgba(255,255,255,.13);overflow:hidden}
-    .loader-progress{height:100%;width:40%;border-radius:999px;background:linear-gradient(90deg,#818cf8,#5eead4);box-shadow:0 0 15px rgba(94,234,212,.65);animation:loaderProgress 1.5s ease-in-out infinite}
-    .loader-caption{color:#a5b4fc;font-size:11px;letter-spacing:.18em;text-transform:uppercase}
-    @keyframes loaderOrbit{to{transform:rotate(360deg) scale(1.04)}}
-    @keyframes loaderRise{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-    @keyframes emblemFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
-    @keyframes emblemPulse{0%{transform:scale(.94);opacity:.7}100%{transform:scale(1.18);opacity:0}}
-    @keyframes brandShine{to{background-position:200% center}}
-    @keyframes loaderProgress{0%{transform:translateX(-120%)}100%{transform:translateX(370%)}}
-    @media(prefers-reduced-motion:reduce){#nazmahalLoader:before,#nazmahalLoader:after,.loader-content,.loader-emblem,.loader-emblem:before,.loader-brand,.loader-progress{animation:none!important}#nazmahalLoader{transition:none}}
-
-    html { scroll-behavior: smooth; }
-    body { background: #f8fafc; }
-    .glass { background: rgba(255,255,255,.88); backdrop-filter: blur(12px); }
-    .card-animate {
-      animation: cardIn .35s ease both;
-    }
-    @keyframes cardIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in { animation: fadeIn .35s ease both; }
-    @keyframes fadeIn { from {opacity:0} to {opacity:1} }
-    /* Gentle reveal animation while scrolling */
-    .scroll-reveal { opacity: 0; transform: translateY(18px); transition: opacity .65s ease, transform .65s cubic-bezier(.2,.7,.2,1); }
-    .scroll-reveal.is-visible { opacity: 1; transform: translateY(0); }
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto !important; }
-      .scroll-reveal, .scroll-reveal.is-visible { opacity: 1; transform: none; transition: none; }
-      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
-    }
-    .btn { transition: .2s ease; }
-    .btn:hover { transform: translateY(-1px); }
-    .spin { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .nav-tile { display:flex; min-height:66px; flex-direction:column; align-items:center; justify-content:center; gap:7px; border:1px solid #e2e8f0; border-radius:16px; background:#f8fafc; padding:10px 6px; color:#475569; font-size:12px; font-weight:800; transition:all .22s ease; }
-    .nav-tile i { font-size:18px; }
-    .nav-tile:hover { transform:translateY(-2px); border-color:#93c5fd; background:#eff6ff; box-shadow:0 8px 20px rgba(37,99,235,.08); }
-    .nav-tile.nav-active { border-color:#2563eb; background:linear-gradient(135deg,#2563eb,#4f46e5); color:white; box-shadow:0 8px 20px rgba(37,99,235,.2); }
-    .nav-tile.nav-active i { color:white !important; }
-    .nav-report { border-radius:12px; background:#ecfdf5; padding:10px 14px; color:#047857; font-size:13px; font-weight:800; transition:all .2s ease; }
-    .nav-report:hover { background:#d1fae5; transform:translateY(-1px); }
-    .nav-report.nav-active { background:#047857; color:white; }
-    @media (max-width:420px) { .nav-tile { min-height:60px; font-size:11px; } .nav-tile i { font-size:16px; } }
-
-    .table-wrap { overflow-x: auto; }
-    input, select {
-      outline: none;
-    }
-    input:focus, select:focus {
-      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-      border-color: #60a5fa !important;
-    }
-
-
-    /* Premium gradient + motion polish */
+    /* ===== বেস স্টাইল ===== */
     body {
+      font-family: 'Hind Siliguri', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
       background: linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 38%, #ecfdf5 72%, #f8fafc 100%);
       background-attachment: fixed;
+      color: #1e293b;
+      line-height: 1.55;
     }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: -30% -10%;
-      z-index: -1;
-      pointer-events: none;
-      background:
-        radial-gradient(circle at 12% 18%, rgba(59,130,246,.12), transparent 27%),
-        radial-gradient(circle at 88% 22%, rgba(168,85,247,.11), transparent 25%),
-        radial-gradient(circle at 52% 90%, rgba(16,185,129,.10), transparent 30%);
-      animation: ambientDrift 18s ease-in-out infinite alternate;
-    }
-    @keyframes ambientDrift {
-      from { transform: translate3d(-1%, -1%, 0) scale(1); }
-      to { transform: translate3d(1.5%, 1%, 0) scale(1.04); }
-    }
-    .card-animate {
-      background-image: linear-gradient(145deg, rgba(255,255,255,.98), rgba(239,246,255,.88));
-      border-color: rgba(148,163,184,.34) !important;
-      box-shadow: 0 8px 24px rgba(30,64,175,.055);
-      transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
-    }
-    .card-animate:hover {
-      transform: translateY(-3px);
-      border-color: rgba(96,165,250,.65) !important;
-      box-shadow: 0 15px 32px rgba(37,99,235,.11);
-    }
-    .nav-tile {
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(224,242,254,.72));
-    }
-    .nav-tile::before, .nav-report::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -120%;
-      width: 70%;
-      height: 100%;
-      background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent);
-      transition: left .55s ease;
-      pointer-events: none;
-    }
-    .nav-tile:hover::before, .nav-report:hover::before { left: 140%; }
-    .nav-tile.nav-active {
-      background: linear-gradient(120deg, #2563eb, #4f46e5, #7c3aed);
-      background-size: 180% 180%;
-      animation: gradientFlow 5s ease infinite;
-    }
-    .nav-report {
-      position: relative;
-      overflow: hidden;
-      background: linear-gradient(120deg, #d1fae5, #ccfbf1, #dcfce7);
-    }
-    .nav-report.nav-active {
-      background: linear-gradient(120deg, #059669, #0d9488, #16a34a);
-      color: white;
-      box-shadow: 0 8px 20px rgba(5,150,105,.2);
-    }
-    @keyframes gradientFlow {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    .btn {
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 4px 12px rgba(15,23,42,.08);
-      transition: transform .22s ease, box-shadow .22s ease, filter .22s ease;
-    }
-    .btn:hover {
-      transform: translateY(-2px);
-      filter: saturate(1.12) brightness(1.02);
-      box-shadow: 0 9px 20px rgba(37,99,235,.16);
-    }
-    .btn:active { transform: translateY(0) scale(.98); }
-    .btn.bg-blue-600, .btn.bg-blue-700 {
-      background-image: linear-gradient(120deg, #2563eb, #4f46e5, #7c3aed) !important;
-      background-size: 180% 180%;
-    }
-    .btn.bg-emerald-600, .btn.bg-green-600 {
-      background-image: linear-gradient(120deg, #059669, #0d9488, #16a34a) !important;
-      background-size: 180% 180%;
-    }
-    .btn.bg-orange-600, .btn.bg-amber-500 {
-      background-image: linear-gradient(120deg, #ea580c, #f59e0b, #f97316) !important;
-    }
-    .btn.bg-purple-600 { background-image: linear-gradient(120deg, #7c3aed, #9333ea, #4f46e5) !important; }
-    .btn.bg-blue-600:hover, .btn.bg-emerald-600:hover, .btn.bg-green-600:hover { animation: gradientFlow 2.5s ease infinite; }
-    input, select, textarea {
-      transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
-    }
-    input:focus, select:focus, textarea:focus {
-      box-shadow: 0 0 0 4px rgba(59,130,246,.13) !important;
-      background-color: #fff !important;
-    }
-    .table-wrap table tbody tr { transition: background-color .18s ease; }
-    .table-wrap table tbody tr:hover { background-color: rgba(219,234,254,.45); }
-    section, .rounded-2xl { scroll-margin-top: 18px; }
+    ::selection { background: rgba(99, 102, 241, 0.22); }
+    * { scrollbar-width: thin; scrollbar-color: #c7d2fe transparent; -webkit-tap-highlight-color: transparent; }
+    body.no-scroll { overflow: hidden; }
+    input, select, button { font-family: inherit; }
+    input:focus, select:focus { outline: 2px solid #818cf8; outline-offset: 1px; }
+    button { cursor: pointer; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .num-in::-webkit-inner-spin-button { opacity: 1; }
 
-    /* Nazmahal premium animated header */
-    .naz-header {
-      position: sticky;
-      isolation: isolate;
-      overflow: hidden;
-      border-bottom: 1px solid rgba(255,255,255,.28) !important;
-      background: linear-gradient(115deg, #071a3b 0%, #123c76 28%, #4338a8 58%, #087f8c 82%, #064e3b 100%);
-      background-size: 240% 240%;
-      animation: nazHeaderFlow 12s ease-in-out infinite;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, .20);
-    }
-    .naz-header::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      pointer-events: none;
-      background: radial-gradient(circle at 12% 0%, rgba(255,255,255,.22), transparent 28%),
-                  radial-gradient(circle at 82% 100%, rgba(45,212,191,.23), transparent 30%);
-    }
+    /* ===== লোডার ===== */
+    #nazmahalLoader { position: fixed; inset: 0; z-index: 99999; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 24px; background: radial-gradient(circle at 50% 42%, rgba(99,102,241,.20), transparent 33%), linear-gradient(135deg,#0b1228 0%,#15143b 48%,#082f35 100%); opacity: 1; visibility: visible; transition: opacity .65s ease, visibility .65s ease; }
+    #nazmahalLoader.loader-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    #nazmahalLoader:before, #nazmahalLoader:after { content: ""; position: absolute; width: min(78vw,520px); aspect-ratio: 1; border: 1px solid rgba(165,180,252,.14); border-radius: 50%; animation: loaderOrbit 12s linear infinite; }
+    #nazmahalLoader:after { width: min(58vw,370px); border-color: rgba(94,234,212,.18); animation-direction: reverse; animation-duration: 9s; }
+    .loader-content { position: relative; z-index: 1; width: min(100%,420px); text-align: center; color: #fff; animation: loaderRise .8s cubic-bezier(.2,.8,.2,1) both; }
+    .loader-emblem { position: relative; display: grid; place-items: center; width: 86px; height: 86px; margin: 0 auto 25px; border-radius: 27px; background: linear-gradient(135deg,#818cf8,#6366f1 48%,#2dd4bf); box-shadow: 0 0 45px rgba(99,102,241,.4), inset 0 1px 0 rgba(255,255,255,.5); animation: emblemFloat 2.8s ease-in-out infinite; }
+    .loader-emblem i { font-size: 34px; color: white; text-shadow: 0 3px 12px rgba(15,23,42,.22); }
+    .loader-brand { margin: 0; font-size: clamp(34px,8vw,48px); font-weight: 700; letter-spacing: 0; line-height: 1.3; background: linear-gradient(90deg,#fff 0%,#c7d2fe 35%,#99f6e4 68%,#fff 100%); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brandShine 3s linear infinite; }
+    .loader-tagline { margin: 8px 0 28px; color: #cbd5e1; font-size: 14px; letter-spacing: .02em; }
+    .loader-track { width: 190px; height: 4px; margin: 0 auto 14px; border-radius: 999px; background: rgba(255,255,255,.13); overflow: hidden; }
+    .loader-progress { height: 100%; width: 40%; border-radius: 999px; background: linear-gradient(90deg,#818cf8,#5eead4); box-shadow: 0 0 15px rgba(94,234,212,.65); animation: loaderProgress 1.5s ease-in-out infinite; }
+    .loader-caption { color: #a5b4fc; font-size: 12px; }
+
+    @keyframes loaderOrbit { to { transform: rotate(360deg) scale(1.04); } }
+    @keyframes loaderRise { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes emblemFloat { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-7px) rotate(2deg); } }
+    @keyframes brandShine { to { background-position: 200% center; } }
+    @keyframes loaderProgress { 0% { transform: translateX(-120%); } 100% { transform: translateX(370%); } }
+
+    /* ===== অ্যানিমেশন ও কার্ড ===== */
+    .fade-in { animation: fadeIn .35s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .card-animate { background-image: linear-gradient(145deg, rgba(255,255,255,.98), rgba(239,246,255,.88)); border-color: rgba(148,163,184,.34) !important; box-shadow: 0 8px 24px rgba(30,64,175,.055); transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease; }
+    .card-animate:hover { transform: translateY(-3px); border-color: rgba(96,165,250,.65) !important; box-shadow: 0 15px 32px rgba(37,99,235,.11); }
+
+    /* ===== হেডার ===== */
+    .naz-header { position: sticky; isolation: isolate; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,.28) !important; background: linear-gradient(115deg, #071a3b 0%, #123c76 28%, #4338a8 58%, #087f8c 82%, #064e3b 100%); background-size: 240% 240%; animation: nazHeaderFlow 12s ease-in-out infinite; box-shadow: 0 10px 30px rgba(15, 23, 42, .20); transition: transform .38s cubic-bezier(.16,1,.3,1); padding-top: env(safe-area-inset-top); }
+    .naz-header.hide { transform: translateY(-102%); }
     .naz-header-inner { position: relative; z-index: 1; }
     .naz-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-    .naz-brand-icon {
-      display: flex; width: 46px; height: 46px; flex-shrink: 0;
-      align-items: center; justify-content: center; border-radius: 15px;
-      color: #fff; font-size: 20px;
-      background: linear-gradient(145deg, rgba(255,255,255,.28), rgba(255,255,255,.08));
-      border: 1px solid rgba(255,255,255,.35);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 6px 18px rgba(0,0,0,.12);
-      animation: nazIconFloat 4s ease-in-out infinite;
-    }
-    .naz-brand-title {
-      display: inline-block; font-weight: 900; letter-spacing: -.045em; line-height: 1.1;
-      color: transparent;
-      background: linear-gradient(90deg, #fff 0%, #dbeafe 22%, #99f6e4 45%, #fef08a 68%, #fff 88%);
-      background-size: 250% auto;
-      -webkit-background-clip: text; background-clip: text;
-      filter: drop-shadow(0 2px 9px rgba(0,0,0,.18));
-      animation: nazTextShimmer 5.5s linear infinite, nazTitleFloat 4s ease-in-out infinite;
-    }
-    .naz-tagline { color: rgba(239,246,255,.88); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+    .naz-brand-icon { display: flex; width: 46px; height: 46px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 15px; color: #fff; font-size: 20px; background: linear-gradient(145deg, rgba(255,255,255,.28), rgba(255,255,255,.08)); border: 1px solid rgba(255,255,255,.35); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 6px 18px rgba(0,0,0,.12); }
+    .naz-brand-title { display: inline-block; font-weight: 700; letter-spacing: 0; line-height: 1.25; color: transparent; background: linear-gradient(90deg, #fff 0%, #dbeafe 22%, #99f6e4 45%, #fef08a 68%, #fff 88%); background-size: 250% auto; -webkit-background-clip: text; background-clip: text; }
+    .naz-tagline { color: rgba(239,246,255,.88); font-size: 12px; }
     .naz-month-line { color: rgba(255,255,255,.78); font-size: 12px; }
-    .naz-month-line #currentMonthLabel { color: #fef08a !important; font-weight: 800; }
-    .naz-header #loginBtn { background: linear-gradient(120deg, #f8fafc, #bfdbfe, #ccfbf1) !important; color: #12305a !important; box-shadow: 0 5px 16px rgba(0,0,0,.16); }
-    .naz-header #logoutBtn { background: rgba(15,23,42,.38) !important; border: 1px solid rgba(255,255,255,.25); }
-    .naz-header #roleBadge { background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.25); }
+    .naz-month-line #currentMonthLabel { color: #fef08a !important; font-weight: 700; }
     @keyframes nazHeaderFlow { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-    @keyframes nazTextShimmer { 0% { background-position: 0% center; } 100% { background-position: 250% center; } }
-    @keyframes nazIconFloat { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-3deg); } }
-    @keyframes nazTitleFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
-    @media (max-width: 480px) {
-      .naz-brand { gap: 9px; }
-      .naz-brand-icon { width: 39px; height: 39px; border-radius: 12px; font-size: 17px; }
-      .naz-tagline { font-size: 9px; letter-spacing: .08em; }
-      .naz-month-line { font-size: 10px; }
-      .naz-header .naz-header-inner { padding-top: 12px; padding-bottom: 12px; }
-      .naz-header #loginBtn, .naz-header #logoutBtn { padding: 9px 10px; font-size: 12px; }
-    }
 
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
-    }
-  
-    /* Mobile-first polished layouts for data-entry sections */
-    @media (max-width: 640px) {
-      #bazarPanel, #depositsPanel, #expensesPanel, #mealsPanel, #summaryPanel, #membersPanel, #excelPanel {
-        padding: 14px !important;
-        border-radius: 18px !important;
-        margin-bottom: 18px !important;
-      }
-      #bazarPanel h2, #depositsPanel h2, #expensesPanel h2, #mealsPanel h2, #summaryPanel h2 {
-        font-size: 17px;
-        line-height: 1.35;
-      }
-      #bazarFormArea .grid, #depositFormArea .grid, #extraFormArea .grid {
-        grid-template-columns: minmax(0, 1fr) !important;
-      }
-      #bazarFormArea input, #bazarFormArea select, #depositFormArea input, #depositFormArea select,
-      #extraFormArea input, #extraFormArea select, #mealFormArea input, #mealFormArea select,
-      #bazarFormArea button, #depositFormArea button, #extraFormArea button, #mealFormArea button {
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-      }
-      #bazarFormArea .flex, #extraFormArea .flex { min-width: 0; }
-      #mealInputs { grid-template-columns: minmax(0, 1fr) !important; }
-      /* Convert wide data tables into readable stacked cards on phones */
-      #bazarPanel .table-wrap, #depositsPanel .table-wrap, #expensesPanel .table-wrap, #mealsPanel .table-wrap {
-        overflow: visible !important;
-      }
-      #bazarPanel table, #depositsPanel table, #expensesPanel table, #mealsPanel table {
-        display: block;
-        width: 100% !important;
-        min-width: 0 !important;
-        border-collapse: separate;
-        border-spacing: 0;
-      }
-      #bazarPanel thead, #depositsPanel thead, #expensesPanel thead, #mealsPanel thead {
-        display: none;
-      }
-      #bazarPanel tbody, #depositsPanel tbody, #expensesPanel tbody, #mealsPanel tbody {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 12px;
-        width: 100%;
-      }
-      #bazarPanel tbody tr, #depositsPanel tbody tr, #expensesPanel tbody tr, #mealsPanel tbody tr {
-        display: block;
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 15px;
-        background: linear-gradient(145deg, #ffffff, #f8fbff);
-        box-shadow: 0 5px 16px rgba(15, 23, 42, .055);
-      }
-      #bazarPanel tbody td, #depositsPanel tbody td, #expensesPanel tbody td, #mealsPanel tbody td {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
-        width: 100%;
-        min-width: 0;
-        padding: 9px 0 !important;
-        border-bottom: 1px solid #edf2f7;
-        text-align: right;
-        overflow-wrap: anywhere;
-      }
-      #bazarPanel tbody td:last-child, #depositsPanel tbody td:last-child,
-      #expensesPanel tbody td:last-child, #mealsPanel tbody td:last-child { border-bottom: 0; }
-      #bazarPanel tbody td::before, #depositsPanel tbody td::before,
-      #expensesPanel tbody td::before, #mealsPanel tbody td::before {
-        flex: 0 0 34%;
-        max-width: 42%;
-        color: #64748b;
-        font-size: 10px;
-        font-weight: 800;
-        letter-spacing: .045em;
-        text-align: left;
-        text-transform: uppercase;
-      }
-      #bazarPanel tbody td:nth-child(1)::before, #expensesPanel tbody td:nth-child(1)::before { content: "Date"; }
-      #bazarPanel tbody td:nth-child(2)::before, #expensesPanel tbody td:nth-child(2)::before { content: "Item"; }
-      #bazarPanel tbody td:nth-child(3)::before, #expensesPanel tbody td:nth-child(3)::before { content: "Category"; }
-      #bazarPanel tbody td:nth-child(4)::before, #expensesPanel tbody td:nth-child(4)::before { content: "Amount"; }
-      #bazarPanel tbody td:nth-child(5)::before, #expensesPanel tbody td:nth-child(5)::before { content: "Action"; }
-      #depositsPanel tbody td:nth-child(1)::before { content: "Date"; }
-      #depositsPanel tbody td:nth-child(2)::before { content: "Member"; }
-      #depositsPanel tbody td:nth-child(3)::before { content: "Amount"; }
-      #depositsPanel tbody td:nth-child(4)::before { content: "Action"; }
-      #mealsPanel tbody td:nth-child(1)::before { content: "Date"; }
-      #mealsPanel tbody td:nth-child(2)::before { content: "Member"; }
-      #mealsPanel tbody td:nth-child(3)::before { content: "Own Meals"; }
-      #mealsPanel tbody td:nth-child(4)::before { content: "Guest Meals"; }
-      #mealsPanel tbody td:nth-child(5)::before { content: "Billable"; }
-      #mealsPanel tbody td:nth-child(6)::before { content: "Action"; }
-      #bazarPanel tbody td button, #depositsPanel tbody td button, #expensesPanel tbody td button, #mealsPanel tbody td button {
-        max-width: 100%;
-      }
-      /* Final Bill: reliable desktop table / mobile cards switching */
-    #summaryPanel .summary-cards-view { display: none !important; }
-    #summaryPanel .summary-table-view { display: block !important; width: 100%; min-width: 0; }
-    #summaryPanel .summary-table-view table { width: 100%; }
+    /* ===== ড্যাশবোর্ড ও ক্যালেন্ডার ===== */
+    .stat-card { position: relative; overflow: hidden; border-radius: 20px !important; }
+    .stat-card::before { content: ""; position: absolute; left: 0; top: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), transparent); }
+    .stat-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; font-size: 13px; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, white); }
+
+    .meal-cal-layout { display: grid; gap: 18px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+    @media(max-width: 1023px) { .meal-cal-layout { grid-template-columns: minmax(0, 1fr); } }
+    .cal-card, .day-card { border: 1px solid #e2e8f0; border-radius: 22px; background: linear-gradient(150deg, #fff, #f5f3ff 140%); padding: 16px; box-shadow: 0 8px 24px rgba(79,70,229,.07); }
+    .cal-title { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; font-weight: 700; font-size: 17px; color: #3730a3; }
+    .cal-dow, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+    .cal-dow span { text-align: center; font-size: 12px; font-weight: 700; color: #94a3b8; }
+    .cal-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; min-height: 62px; padding: 7px 4px 6px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; color: #475569; cursor: pointer; transition: transform .2s, box-shadow .2s; }
+    .cal-day:hover:not(:disabled) { transform: translateY(-2px); }
+    .cal-day:disabled { opacity: .38; cursor: not-allowed; }
+    .cal-day.has-data { background: rgba(124,58,237, calc(.07 + var(--lvl) * .24)); border-color: rgba(124,58,237, calc(.14 + var(--lvl) * .3)); color: #3730a3; }
+    .cal-day.is-selected { background: linear-gradient(120deg, #2563eb, #4f46e5, #7c3aed); border-color: transparent; color: #fff; box-shadow: 0 12px 26px rgba(79,70,229,.35); transform: translateY(-2px); }
+    .cal-day.is-today { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #818cf8; }
+
+    /* ===== হোম হিরো ===== */
+    .home-hero { position: relative; overflow: hidden; margin-bottom: 14px; padding: 20px 18px 18px; border-radius: 28px; color: #fff; background: linear-gradient(135deg, #1e3a8a, #4338ca 55%, #0f766e); background-size: 160% 160%; animation: nazHeaderFlow 9s ease infinite; box-shadow: 0 18px 40px rgba(67,56,202,.3); }
+    .hero-greet { margin: 0; font-size: 14px; font-weight: 600; color: #c7d2fe; }
+    .hero-title { margin: 4px 0 2px; font-size: 28px; font-weight: 700; }
+    .hero-date { margin: 0 0 14px; font-size: 13px; color: #a5f3fc; }
+    .hero-select-wrap { position: relative; }
+    .hero-select-wrap i { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #c7d2fe; pointer-events: none; }
+    .hero-select { width: 100%; padding: 10px 38px 10px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.14); color: #fff; font-weight: 600; appearance: none; -webkit-appearance: none; }
+    .hero-select option { color: #0f172a; }
+    .hero-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+    .hero-trio[hidden] { display: none; }
+    .hero-trio > div { padding: 10px 6px; border-radius: 16px; background: rgba(255,255,255,.13); text-align: center; }
+    .hero-trio small { display: block; margin-bottom: 2px; font-size: 11px; color: #c7d2fe; font-weight: 600; }
+    .hero-trio b { font-size: 15px; font-weight: 700; }
+    .hero-hint { margin: 12px 0 0; font-size: 13px; color: #c7d2fe; }
+
+    .quick-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .quick { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 4px 12px; border-radius: 20px; border: 1px solid #e2e8f0; background: #fff; color: #334155; font-size: 13px; font-weight: 700; box-shadow: 0 6px 18px rgba(30,64,175,.06); transition: transform .2s; }
+    .quick:active { transform: scale(.96); }
+    .quick i { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; color: #fff; font-size: 17px; background: var(--c); }
+
+    /* ===== নেভিগেশন ===== */
+    .tabbar { position: fixed; left: 0; right: 0; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 40; width: calc(100% - 24px); max-width: 536px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px; border-radius: 26px; background: rgba(255,255,255,.86); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,.7); box-shadow: 0 14px 40px rgba(30,41,99,.22); }
+    .tab-indicator { position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px)/5); border-radius: 20px; background: linear-gradient(120deg,#2563eb,#4f46e5,#7c3aed); transform: translateX(calc(var(--i) * 100%)); transition: transform .5s cubic-bezier(.34,1.4,.5,1); }
+    .tab { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 56px; border: 0; background: transparent; color: #64748b; font-size: 12px; font-weight: 600; transition: color .3s; }
+    .tab.active { color: #fff; }
+
+    .more-sheet { position: fixed; inset: 0; z-index: 60; visibility: hidden; transition: visibility 0s .4s; }
+    .more-sheet.open { visibility: visible; transition: visibility 0s; }
+    .more-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(3px); opacity: 0; transition: opacity .35s ease; }
+    .more-sheet.open .more-backdrop { opacity: 1; }
+    .more-panel { position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 560px; padding: 12px 18px calc(24px + env(safe-area-inset-bottom)); border-radius: 28px 28px 0 0; background: #fff; transform: translateY(105%); transition: transform .45s cubic-bezier(.16,1,.3,1); }
+    .more-sheet.open .more-panel { transform: translateY(0); }
+    .more-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .more-item { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 10px; border-radius: 22px; border: 1px solid #e2e8f0; background: #f8fafc; color: #1e293b; font-weight: 700; font-size: 14px; }
+    .more-item i { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 16px; font-size: 20px; color: #fff; background: var(--c); }
+
+    /* ===== ভাসমান বোতাম ===== */
+    .fab { position: fixed; right: max(18px, calc(50% - 262px)); bottom: calc(98px + env(safe-area-inset-bottom)); z-index: 39; width: 54px; height: 54px; border: 0; border-radius: 18px; color: #fff; font-size: 20px; background: linear-gradient(135deg,#7c3aed,#4f46e5); box-shadow: 0 12px 28px rgba(79,70,229,.45); opacity: 0; transform: scale(0); pointer-events: none; transition: transform .45s, opacity .3s; }
+    .fab.show { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+    /* ===== টোস্ট ===== */
+    #toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 70; max-width: min(92vw, 420px); padding: 12px 18px; border-radius: 16px; color: #fff; font-size: 14px; font-weight: 600; background: #0f172a; box-shadow: 0 14px 34px rgba(15,23,42,.35); opacity: 0; transform: translate(-50%, 14px); pointer-events: none; transition: opacity .25s, transform .25s; text-align: center; }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); }
+    #toast.err { background: #dc2626; }
+
+    /* ===== রেসপনসিভ ===== */
     @media (max-width: 767px) {
       #summaryPanel .summary-cards-view { display: grid !important; }
       #summaryPanel .summary-table-view { display: none !important; }
@@ -355,1618 +149,1571 @@
       #summaryPanel .summary-table-view { display: block !important; overflow-x: auto; }
       #summaryPanel .summary-table-view table { min-width: 1050px; }
     }
+    .table-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; }
+    tfoot td { background: #f1f5f9; font-weight: 700; }
 
-    /* Keep the summary member cards comfortable on narrow screens */
-      #summaryPanel .table-wrap { overflow-x: auto; }
-      #summaryPanel table { min-width: 0 !important; }
-    }
-    @media (max-width: 380px) {
-      #bazarPanel, #depositsPanel, #expensesPanel, #mealsPanel, #summaryPanel { padding: 11px !important; }
-      #bazarPanel tbody tr, #depositsPanel tbody tr, #expensesPanel tbody tr, #mealsPanel tbody tr { padding: 7px 10px; }
-      #bazarPanel tbody td::before, #depositsPanel tbody td::before,
-      #expensesPanel tbody td::before, #mealsPanel tbody td::before { flex-basis: 31%; font-size: 9px; }
-    }
+    /* ===== ফুটার ===== */
+    .site-footer { position: relative; overflow: hidden; margin-top: 48px; padding: 32px 16px calc(110px + env(safe-area-inset-bottom)); text-align: center; color: #dbeafe; background: linear-gradient(120deg,#0f172a,#172554,#312e81,#0f766e,#0f172a); border-top: 1px solid rgba(125,211,252,.38); }
+    .footer-author { display: inline-flex; align-items: center; gap: 9px; color: #7dd3fc; font-size: 19px; font-weight: 700; text-decoration: none; }
 
-    /* Scroll-triggered reveal: sections and their content gently rise into view */
-    .scroll-reveal {
-      opacity: 0;
-      transform: translateY(26px) scale(.985);
-      transition: opacity .72s ease, transform .72s cubic-bezier(.16, 1, .3, 1);
-      will-change: opacity, transform;
-    }
-    .scroll-reveal.is-visible { opacity: 1; transform: translateY(0) scale(1); }
-    .scroll-reveal.reveal-delay-1 { transition-delay: .08s; }
-    .scroll-reveal.reveal-delay-2 { transition-delay: .16s; }
-    .scroll-reveal.reveal-delay-3 { transition-delay: .24s; }
+    /* ===== প্রিন্ট ===== */
+    /* ===== এনিমেশন ও ট্রানজিশন ===== */
+    input, select, textarea { transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease; }
+    input:focus, select:focus { border-color: #818cf8 !important; box-shadow: 0 0 0 4px rgba(129,140,248,.18); }
+    main button, #loginForm button { transition: transform .18s ease, box-shadow .25s ease, background-color .2s ease, opacity .2s ease; }
+    main button:not(:disabled):not(.cal-day):hover, #loginForm button:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15,23,42,.14); }
+    main button:not(:disabled):active, #loginForm button:not(:disabled):active { transform: scale(.96); box-shadow: none; }
+    .cal-day:active:not(:disabled) { transform: scale(.94); }
+    .table-wrap tbody tr { transition: background-color .2s ease; }
+    .table-wrap tbody tr:hover { background: #f5f3ff; }
+
+    .enter-item { animation: itemIn .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--n, 0) * 40ms); }
+    @keyframes itemIn { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+
+    .detail-in { animation: detailIn .4s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes detailIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+
+    .tab.active i { animation: tabPop .5s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes tabPop { 0% { transform: scale(.7) translateY(4px); } 60% { transform: scale(1.25) translateY(-3px); } 100% { transform: none; } }
+
+    .pulse-dot { animation: dotPulse 1.8s ease-out infinite; }
+    @keyframes dotPulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,.55); } 70% { box-shadow: 0 0 0 9px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+
+    #loginModal { transition: opacity .25s ease; }
+    #loginModal.flex { animation: backdropIn .25s ease both; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    #loginModal > div { animation: modalPop .4s cubic-bezier(.34,1.4,.5,1) both; }
+    @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalPop { from { opacity: 0; transform: translateY(24px) scale(.94); } to { opacity: 1; transform: none; } }
+
+    .hero-trio > div { transition: transform .25s ease, background-color .25s ease; }
+    .hero-trio > div:hover { transform: translateY(-3px); background: rgba(255,255,255,.2); }
+    .quick i, .more-item i, .stat-ico { transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+    .quick:hover i, .more-item:hover i { transform: scale(1.12) rotate(-6deg); }
+    .stat-card:hover .stat-ico { transform: scale(1.15) rotate(8deg); }
+    .more-item { transition: transform .2s ease, box-shadow .25s ease; }
+    .more-item:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(30,64,175,.12); }
+    .more-item:active { transform: scale(.96); }
+    .quick:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(30,64,175,.12); }
+    .naz-brand-icon { transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+    .naz-brand-icon:hover { transform: rotate(-10deg) scale(1.08); }
+    .footer-author { transition: transform .25s ease, color .25s ease; }
+    .footer-author:hover { transform: translateY(-2px); color: #bae6fd; }
+    .fab.show:hover { transform: scale(1.08) rotate(-6deg); }
+    .fab.show { animation: fabIn .5s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes fabIn { from { opacity: 0; transform: scale(0) rotate(-90deg); } to { opacity: 1; transform: none; } }
+
     @media (prefers-reduced-motion: reduce) {
-      .scroll-reveal, .scroll-reveal.is-visible { opacity: 1; transform: none; transition: none; will-change: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
 
-</style>
+    @media print {
+      body { background: #fff !important; }
+      .naz-header, .tabbar, .more-sheet, .fab, #toast, .site-footer, #nazmahalLoader, .no-print { display: none !important; }
+      .card-animate, .table-wrap { box-shadow: none !important; }
+      #summaryPanel .summary-cards-view { display: none !important; }
+      #summaryPanel .summary-table-view { display: block !important; overflow: visible !important; }
+    }
+  </style>
 </head>
 
-<body class="text-slate-800">
+<body>
 
-  <div id="nazmahalLoader" role="status" aria-live="polite" aria-label="Loading Nazmahal Mess Manager">
+  <!-- লোডার -->
+  <div id="nazmahalLoader" role="status" aria-live="polite">
     <div class="loader-content">
-      <div class="loader-emblem" aria-hidden="true"><i class="fa-solid fa-house-chimney-user"></i></div>
-      <h1 class="loader-brand">NAZMAHAL</h1>
-      <p class="loader-tagline">MESS MEAL MANAGER</p>
-      <div class="loader-track" aria-hidden="true"><div class="loader-progress"></div></div>
-      <div class="loader-caption">Preparing your dashboard</div>
+      <div class="loader-emblem"><i class="fa-solid fa-house-chimney-user"></i></div>
+      <h1 class="loader-brand">নাজমহল</h1>
+      <p class="loader-tagline">মেস মিল ম্যানেজার</p>
+      <div class="loader-track"><div class="loader-progress"></div></div>
+      <div class="loader-caption">আপনার ড্যাশবোর্ড প্রস্তুত হচ্ছে…</div>
     </div>
   </div>
-  <script>
-    (function(){
-      const loader = document.getElementById('nazmahalLoader');
-      if (!loader) return;
-      let dismissed = false;
-      function dismissLoader(){
-        if (dismissed) return;
-        dismissed = true;
-        loader.classList.add('loader-hidden');
-        window.setTimeout(() => loader.remove(), 750);
-      }
-      // Keep the branded intro visible briefly, but never block a slow connection indefinitely.
-      window.addEventListener('load', () => window.setTimeout(dismissLoader, 1500), { once:true });
-      window.setTimeout(dismissLoader, 6500);
-    })();
-  </script>
 
-
-  <!-- LOGIN MODAL -->
-  <div id="loginModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 p-4 items-center justify-center">
+  <!-- লগইন মডাল -->
+  <div id="loginModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 p-4 items-center justify-center" onclick="if(event.target===this)closeLogin()">
     <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl fade-in">
       <div class="mb-5 text-center">
         <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white text-xl">
           <i class="fa-solid fa-right-to-bracket"></i>
         </div>
-        <h2 class="text-2xl font-bold">Manager Login</h2>
-        <p class="mt-1 text-sm text-slate-500">Admin or assigned Moderator</p>
+        <h2 class="text-2xl font-bold">ম্যানেজার লগইন</h2>
+        <p class="mt-1 text-sm text-slate-500">অ্যাডমিন অথবা নির্ধারিত মডারেটর</p>
       </div>
 
       <form id="loginForm" class="space-y-4">
         <div>
-          <label class="mb-1 block text-sm font-medium">Email</label>
-          <input id="loginEmail" type="email" required
-            class="w-full rounded-xl border border-slate-300 px-4 py-3"
-            placeholder="your@email.com">
+          <label for="loginEmail" class="mb-1 block text-sm font-medium">ইমেইল</label>
+          <input id="loginEmail" type="email" required autocomplete="username" class="w-full rounded-xl border border-slate-300 px-4 py-3" placeholder="আপনার@ইমেইল.com">
         </div>
 
         <div>
-          <label class="mb-1 block text-sm font-medium">Password</label>
-          <input id="loginPassword" type="password" required
-            class="w-full rounded-xl border border-slate-300 px-4 py-3"
-            placeholder="••••••••">
+          <label for="loginPassword" class="mb-1 block text-sm font-medium">পাসওয়ার্ড</label>
+          <div class="relative">
+            <input id="loginPassword" type="password" required autocomplete="current-password" class="w-full rounded-xl border border-slate-300 px-4 py-3 pr-12" placeholder="••••••••">
+            <button type="button" id="pwToggle" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" aria-label="পাসওয়ার্ড দেখান/লুকান"><i class="fa-regular fa-eye"></i></button>
+          </div>
         </div>
 
         <p id="loginError" class="hidden rounded-xl bg-red-50 p-3 text-sm text-red-600"></p>
 
         <div class="flex gap-2">
-          <button type="submit"
-            class="btn flex-1 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700">
-            <i class="fa-solid fa-right-to-bracket mr-1"></i> Login
+          <button id="loginSubmit" type="submit" class="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700">
+            <i class="fa-solid fa-right-to-bracket mr-1"></i> লগইন
           </button>
-          <button type="button" onclick="closeLogin()"
-            class="btn rounded-xl bg-slate-100 px-4 py-3 font-semibold hover:bg-slate-200">
-            Cancel
+          <button type="button" onclick="closeLogin()" class="rounded-xl bg-slate-100 px-4 py-3 font-semibold hover:bg-slate-200">
+            বাতিল
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- HEADER -->
+  <!-- হেডার -->
   <header class="naz-header top-0 z-40">
     <div class="naz-header-inner mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4">
       <div class="naz-brand">
         <div class="naz-brand-icon"><i class="fa-solid fa-utensils"></i></div>
         <div class="min-w-0">
-          <h1 class="text-xl sm:text-2xl"><span class="naz-brand-title">Nazmahal</span></h1>
-          <p class="naz-tagline mt-1">Mess Meal Manager</p>
-          <p class="naz-month-line mt-1">
-            <i class="fa-regular fa-calendar-days mr-1"></i> Current month: 
-            <span id="currentMonthLabel"></span>
+          <h1 class="text-2xl sm:text-3xl"><span class="naz-brand-title">নাজমহল</span></h1>
+          <p class="naz-tagline">মেস মিল ম্যানেজার</p>
+          <p class="naz-month-line">
+            <i class="fa-regular fa-calendar-days mr-1"></i> দেখছেন: <span id="currentMonthLabel"></span>
           </p>
-          <div class="mt-2 flex flex-wrap items-center gap-2">
-            <label for="monthHistorySelect" class="text-xs font-semibold text-blue-100">View month:</label>
-            <select id="monthHistorySelect" onchange="changeActiveMonth(this.value)"
-              class="max-w-[210px] rounded-lg border border-white/30 bg-white/15 px-2 py-1.5 text-xs font-semibold text-white">
-              <option value="">Loading months...</option>
-            </select>
-          </div>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
-        <span id="roleBadge"
-          class="hidden rounded-full px-3 py-1 text-xs font-bold"></span>
-
-        <button id="loginBtn" onclick="openLogin()"
-          class="btn rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-          <i class="fa-solid fa-lock mr-1"></i> Login
+        <span id="roleBadge" class="hidden rounded-full px-3 py-1 text-xs font-bold"></span>
+        <button id="loginBtn" onclick="openLogin()" class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+          <i class="fa-solid fa-lock mr-1"></i> লগইন
         </button>
-
-        <button id="logoutBtn" onclick="logout()"
-          class="btn hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">
-          <i class="fa-solid fa-right-from-bracket mr-1"></i> Logout
+        <button id="logoutBtn" onclick="logout()" class="hidden rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">
+          <i class="fa-solid fa-right-from-bracket mr-1"></i> লগআউট
         </button>
       </div>
     </div>
   </header>
 
-  <main class="mx-auto max-w-7xl px-4 py-5 sm:py-8">
+  <!-- মূল অংশ -->
+  <main class="mx-auto max-w-5xl px-4 py-5 sm:py-8">
 
-    <!-- STATUS -->
-    <section id="accountStatusPanel" class="mb-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm card-animate">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p class="text-sm text-slate-500">Account status</p>
-          <div class="mt-1 flex items-center gap-2">
-            <span id="monthStatusDot" class="h-3 w-3 rounded-full bg-emerald-500"></span>
-            <span id="monthStatusText" class="font-bold">Open</span>
+    <!-- হোম প্যানেল -->
+    <section id="overviewPanel" data-nav-panel="true" class="fade-in space-y-4">
+
+      <section class="home-hero">
+        <p class="hero-greet" id="heroGreet"></p>
+        <h2 class="hero-title">নাজমহল মেস</h2>
+        <p class="hero-date" id="heroDate"></p>
+        <div class="hero-select-wrap" style="margin-bottom:10px">
+          <select id="monthSelect" class="hero-select" aria-label="মাস নির্বাচন"></select>
+          <i class="fa-solid fa-calendar-days"></i>
+        </div>
+        <div class="hero-select-wrap">
+          <select id="heroMemberSelect" class="hero-select" aria-label="নিজের নাম"><option value="">নিজের নাম নির্বাচন করুন</option></select>
+          <i class="fa-solid fa-chevron-down"></i>
+        </div>
+        <div class="hero-trio" id="heroTrio" hidden>
+          <div><small>মোট বিল</small><b id="heroBill">৳০</b></div>
+          <div><small>জমা</small><b id="heroDep">৳০</b></div>
+          <div><small id="heroBalLbl">ব্যালেন্স</small><b id="heroBal">৳০</b></div>
+        </div>
+        <p class="hero-hint" id="heroHint">নিজের নাম নির্বাচন করলে এখানেই আপনার বিল দেখতে পাবেন।</p>
+      </section>
+
+      <section class="quick-row">
+        <button type="button" class="quick" style="--c:#7c3aed" onclick="showPanel('mealsPanel')"><i class="fa-solid fa-bowl-food"></i><span>মিল</span></button>
+        <button type="button" class="quick" style="--c:#059669" onclick="showPanel('bazarPanel')"><i class="fa-solid fa-cart-shopping"></i><span>বাজার</span></button>
+        <button type="button" class="quick" style="--c:#4f46e5" onclick="showPanel('summaryPanel')"><i class="fa-solid fa-file-invoice-dollar"></i><span>বিল</span></button>
+        <button type="button" class="quick" style="--c:#0284c7" onclick="showPanel('depositsPanel')"><i class="fa-solid fa-money-bill-transfer"></i><span>জমা</span></button>
+      </section>
+
+      <section id="accountStatusPanel" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm card-animate">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-slate-500">হিসাবের অবস্থা</p>
+            <div class="mt-1 flex items-center gap-2">
+              <span id="monthStatusDot" class="h-3 w-3 rounded-full bg-emerald-500"></span>
+              <span id="monthStatusText" class="font-bold">চলমান</span>
+            </div>
           </div>
-        </div>
-
-        <div id="adminControls" class="hidden flex flex-wrap gap-2">
-          <button id="closeMonthBtn" onclick="toggleMonthClose()"
-            class="btn rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600">
-            <i class="fa-solid fa-lock mr-1"></i> Close Month
-          </button>
-        </div>
-      </div>
-
-      <div id="viewerNotice"
-        class="mt-3 rounded-xl bg-blue-50 p-3 text-sm text-blue-700">
-        <i class="fa-solid fa-eye mr-1"></i>
-        You are viewing the current mess হিসাব. Login is required only for Admin/Moderator actions.
-      </div>
-    </section>
-
-    <!-- QUICK NAVIGATION -->
-    <section class="mb-6 rounded-3xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-      <div class="mb-3 flex items-center justify-between gap-3 px-1">
-        <div><p class="text-xl font-bold uppercase tracking-[.18em] text-blue-600">Explore at a Glance</p><h2 class="text-lg font-extrabold text-slate-800"></h2></div>
-        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500"><i class="fa-solid fa-bolt mr-1 text-amber-500"></i> Quick access</span>
-      </div>
-      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
-        <button type="button" data-nav="overview" onclick="showPanel('overview')" class="nav-tile nav-active"><i class="fa-solid fa-chart-pie"></i><span>Overview</span></button>
-        <button type="button" data-nav="membersPanel" onclick="showPanel('membersPanel')" class="nav-tile"><i class="fa-solid fa-users text-blue-600"></i><span>Members</span></button>
-        <button type="button" data-nav="bazarPanel" onclick="showPanel('bazarPanel')" class="nav-tile"><i class="fa-solid fa-cart-shopping text-emerald-600"></i><span>Big Bazar</span></button>
-        <button type="button" data-nav="depositsPanel" onclick="showPanel('depositsPanel')" class="nav-tile"><i class="fa-solid fa-money-bill-transfer text-sky-600"></i><span>Deposits</span></button>
-        <button type="button" data-nav="expensesPanel" onclick="showPanel('expensesPanel')" class="nav-tile"><i class="fa-solid fa-receipt text-orange-600"></i><span>Extra Expenses</span></button>
-        <button type="button" data-nav="mealsPanel" onclick="showPanel('mealsPanel')" class="nav-tile"><i class="fa-solid fa-bowl-food text-purple-600"></i><span>Daily Meals</span></button>
-        <button type="button" data-nav="summaryPanel" onclick="showPanel('summaryPanel')" class="nav-tile"><i class="fa-solid fa-file-invoice-dollar text-indigo-600"></i><span>Final Bill</span></button>
-      </div>
-      <div class="mt-2 flex justify-end"><button type="button" data-nav="excelPanel" onclick="showPanel('excelPanel')" class="nav-report"><i class="fa-solid fa-file-excel mr-2"></i>Excel Report</button></div>
-    </section>
-
-    <section id="overviewPanel" data-nav-panel="true" class="fade-in space-y-0">
-    <!-- DASHBOARD -->
-    <section class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
-        <p class="text-xs text-slate-500">Boarder</p>
-        <p id="totalBoarder" class="mt-1 text-2xl font-extrabold">0</p>
-      </div>
-      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
-        <p class="text-xs text-slate-500">Billable Meals</p>
-        <p id="totalMeals" class="mt-1 text-2xl font-extrabold">0</p>
-      </div>
-      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
-        <p class="text-xs text-slate-500">Food Cost</p>
-        <p id="totalFoodCost" class="mt-1 text-2xl font-extrabold">৳0</p>
-      </div>
-      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
-        <p class="text-xs text-slate-500">Meal Rate</p>
-        <p id="mealRate" class="mt-1 text-2xl font-extrabold">৳0</p>
-      </div>
-      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
-        <p class="text-xs text-slate-500">Non-Food Cost</p>
-        <p id="totalNonFoodCost" class="mt-1 text-2xl font-extrabold">৳0</p>
-      </div>
-      <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate">
-        <p class="text-xs text-slate-500">Extra Rate</p>
-        <p id="extraRate" class="mt-1 text-2xl font-extrabold">৳0</p>
-      </div>
-    </section>
-
-    <!-- AUTH / MANAGER INFO -->
-    <section id="managerPanel" class="mb-6 hidden rounded-2xl border border-blue-100 bg-blue-50 p-4">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-blue-500">Logged in</p>
-          <p id="loggedUserText" class="font-bold text-blue-900"></p>
-          <p id="managerText" class="text-sm text-blue-700"></p>
-        </div>
-
-        <div id="adminManagerBox" class="hidden w-full lg:max-w-md">
-          <label class="mb-1 block text-sm font-semibold text-blue-900">Current Moderator / Manager</label>
-          <div class="flex gap-2">
-            <select id="managerSelect"
-              class="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 py-2"></select>
-            <button onclick="saveManager()"
-              class="btn rounded-xl bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700">
-              Save
+          <div id="adminControls" class="hidden">
+            <button id="closeMonthBtn" onclick="toggleMonthClose()" class="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white hover:bg-amber-600">
+              <i class="fa-solid fa-lock mr-1"></i> মাস বন্ধ করুন
             </button>
           </div>
         </div>
-      </div>
+        <div id="viewerNotice" class="mt-3 rounded-xl bg-blue-50 p-3 text-sm text-blue-700"></div>
+      </section>
+
+      <section class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate stat-card" style="--accent:#2563eb">
+          <div class="flex items-center justify-between gap-2"><p class="text-xs font-semibold text-slate-500">বোর্ডার</p><span class="stat-ico"><i class="fa-solid fa-users"></i></span></div>
+          <p id="totalBoarder" class="mt-1 text-2xl font-bold">০</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate stat-card" style="--accent:#7c3aed">
+          <div class="flex items-center justify-between gap-2"><p class="text-xs font-semibold text-slate-500">বিলযোগ্য মিল</p><span class="stat-ico"><i class="fa-solid fa-bowl-food"></i></span></div>
+          <p id="totalMeals" class="mt-1 text-2xl font-bold">০</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate stat-card" style="--accent:#059669">
+          <div class="flex items-center justify-between gap-2"><p class="text-xs font-semibold text-slate-500">খাবার খরচ</p><span class="stat-ico"><i class="fa-solid fa-basket-shopping"></i></span></div>
+          <p id="totalFoodCost" class="mt-1 text-2xl font-bold">৳০</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate stat-card" style="--accent:#4f46e5">
+          <div class="flex items-center justify-between gap-2"><p class="text-xs font-semibold text-slate-500">মিল রেট</p><span class="stat-ico"><i class="fa-solid fa-tag"></i></span></div>
+          <p id="mealRate" class="mt-1 text-2xl font-bold">৳০</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate stat-card" style="--accent:#ea580c">
+          <div class="flex items-center justify-between gap-2"><p class="text-xs font-semibold text-slate-500">অন্যান্য খরচ</p><span class="stat-ico"><i class="fa-solid fa-box-open"></i></span></div>
+          <p id="totalNonFoodCost" class="mt-1 text-2xl font-bold">৳০</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm border border-slate-200 card-animate stat-card" style="--accent:#0d9488">
+          <div class="flex items-center justify-between gap-2"><p class="text-xs font-semibold text-slate-500">জনপ্রতি অতিরিক্ত</p><span class="stat-ico"><i class="fa-solid fa-coins"></i></span></div>
+          <p id="extraRate" class="mt-1 text-2xl font-bold">৳০</p>
+        </div>
+      </section>
+
+      <section id="managerPanel" class="hidden rounded-2xl border border-blue-100 bg-blue-50 p-4">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-xs font-semibold text-blue-500">লগইন করা আছে</p>
+            <p id="loggedUserText" class="font-bold text-blue-900"></p>
+            <p id="managerText" class="text-sm text-blue-700"></p>
+          </div>
+          <div id="adminManagerBox" class="hidden w-full lg:max-w-md">
+            <label for="managerSelect" class="mb-1 block text-sm font-semibold text-blue-900">বর্তমান মডারেটর / ম্যানেজার</label>
+            <div class="flex gap-2">
+              <select id="managerSelect" class="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-3 py-2"></select>
+              <button onclick="saveManager()" class="rounded-xl bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700">সংরক্ষণ</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-2xl bg-slate-900 p-5 text-white shadow-lg">
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div><p class="text-sm text-slate-400">মোট খরচ</p><p id="totalExpense" class="mt-1 text-2xl font-bold">৳০</p></div>
+          <div><p class="text-sm text-slate-400">মোট জমা</p><p id="totalDeposit" class="mt-1 text-2xl font-bold">৳০</p></div>
+          <div><p class="text-sm text-slate-400">অবশিষ্ট টাকা</p><p id="remainingMoney" class="mt-1 text-2xl font-bold">৳০</p></div>
+        </div>
+      </section>
+
     </section>
 
-    <!-- MONEY SUMMARY -->
-    <section class="mb-6 rounded-2xl bg-slate-900 p-5 text-white shadow-lg">
-      <div class="grid gap-4 sm:grid-cols-3">
-        <div>
-          <p class="text-sm text-slate-400">Total Expense</p>
-          <p id="totalExpense" class="mt-1 text-2xl font-extrabold">৳0</p>
-        </div>
-        <div>
-          <p class="text-sm text-slate-400">Total Deposit</p>
-          <p id="totalDeposit" class="mt-1 text-2xl font-extrabold">৳0</p>
-        </div>
-        <div>
-          <p class="text-sm text-slate-400">Remaining Money</p>
-          <p id="remainingMoney" class="mt-1 text-2xl font-extrabold">৳0</p>
-        </div>
-      </div>
-    </section>
-
-    </section>
-
-    <!-- MEMBERS -->
-    <section id="membersPanel" data-nav-panel="true" class="hidden fade-in mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <!-- সদস্য প্যানেল -->
+    <section id="membersPanel" data-nav-panel="true" class="hidden fade-in rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <div class="mb-4 flex items-center justify-between">
         <div>
-          <h2 class="text-lg font-bold"><i class="fa-solid fa-users text-blue-600 mr-1"></i> Members</h2>
-          <p class="text-sm text-slate-500">Boarder list for this current account.</p>
+          <h2 class="text-lg font-bold"><i class="fa-solid fa-users text-blue-600 mr-1"></i> সদস্য</h2>
+          <p class="text-sm text-slate-500">চলতি মাসের বোর্ডার তালিকা।</p>
         </div>
+        <span id="memberCount" class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">০ জন</span>
       </div>
-
       <div id="memberFormArea" class="mb-4 hidden">
         <div class="flex flex-col gap-2 sm:flex-row">
-          <input id="memberName" type="text" placeholder="Member name"
-            class="min-w-0 flex-1 rounded-xl border border-slate-300 px-4 py-3">
-          <button onclick="addMember()"
-            class="btn rounded-xl bg-blue-600 px-5 py-3 font-bold text-white hover:bg-blue-700">
-            <i class="fa-solid fa-plus mr-1"></i> Add Member
+          <input id="memberName" type="text" placeholder="সদস্যের নাম" class="min-w-0 flex-1 rounded-xl border border-slate-300 px-4 py-3">
+          <button onclick="addMember()" class="rounded-xl bg-blue-600 px-5 py-3 font-bold text-white hover:bg-blue-700">
+            <i class="fa-solid fa-plus mr-1"></i> সদস্য যোগ করুন
           </button>
         </div>
       </div>
-
       <div id="memberList" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"></div>
     </section>
 
-    <!-- BIG BAZAR -->
-    <section id="bazarPanel" data-nav-panel="true" class="hidden fade-in mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <!-- বাজার প্যানেল -->
+    <section id="bazarPanel" data-nav-panel="true" class="hidden fade-in rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="text-lg font-bold"><i class="fa-solid fa-cart-shopping text-emerald-600 mr-1"></i> Big Bazar</h2>
-          <p class="text-sm text-slate-500">Unlimited entries.</p>
+          <h2 class="text-lg font-bold"><i class="fa-solid fa-cart-shopping text-emerald-600 mr-1"></i> বড় বাজার</h2>
+          <p class="text-sm text-slate-500">যত খুশি এন্ট্রি দেওয়া যাবে।</p>
         </div>
-        <span id="bazarCount" class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">0 entries</span>
+        <span id="bazarCount" class="self-start rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">০টি এন্ট্রি</span>
       </div>
 
       <div id="bazarFormArea" class="mb-5 hidden">
         <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input id="bazarDate" type="date" class="rounded-xl border border-slate-300 px-3 py-3">
-          <input id="bazarItem" type="text" placeholder="Item name" class="rounded-xl border border-slate-300 px-3 py-3">
-          <select id="bazarCategory" class="rounded-xl border border-slate-300 px-3 py-3">
-            <option value="food">Food</option>
-            <option value="non-food">Non-Food</option>
+          <input id="bazarDate" type="date" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+          <input id="bazarItem" type="text" placeholder="পণ্যের নাম" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+          <select id="bazarCategory" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+            <option value="food">খাবার</option>
+            <option value="non-food">অন্যান্য (নন-ফুড)</option>
           </select>
           <div class="flex gap-2">
-            <input id="bazarAmount" type="number" min="0" step="0.01" placeholder="Amount"
-              class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3">
-            <button id="bazarSubmitBtn" onclick="addBazar()"
-              class="btn rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white hover:bg-emerald-700">
-              Add
-            </button>
+            <input id="bazarAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="টাকার পরিমাণ" class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3">
+            <button id="bazarSubmitBtn" onclick="addBazar()" class="rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white hover:bg-emerald-700">যোগ</button>
           </div>
         </div>
       </div>
 
-      <div class="table-wrap">
+      <div id="bazarCards" class="md:hidden space-y-2"></div>
+      <div class="table-wrap hidden md:block">
         <table class="w-full min-w-[650px] text-left text-sm">
-          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th class="p-3">Date</th><th class="p-3">Item</th><th class="p-3">Category</th><th class="p-3">Amount</th><th class="p-3">Action</th></tr>
+          <thead class="border-b bg-slate-50 text-xs text-slate-500">
+            <tr><th class="p-3">তারিখ</th><th class="p-3">পণ্য</th><th class="p-3">ধরন</th><th class="p-3">টাকা</th><th class="p-3">অ্যাকশন</th></tr>
           </thead>
           <tbody id="bazarTable"></tbody>
+          <tfoot id="bazarFoot"></tfoot>
         </table>
       </div>
     </section>
 
-    <!-- DEPOSIT -->
-    <section id="depositsPanel" data-nav-panel="true" class="hidden fade-in mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
-      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-money-bill-transfer text-blue-600 mr-1"></i> Deposits</h2>
-
+    <!-- জমা প্যানেল -->
+    <section id="depositsPanel" data-nav-panel="true" class="hidden fade-in rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-money-bill-transfer text-blue-600 mr-1"></i> জমা</h2>
       <div id="depositFormArea" class="mb-5 hidden">
         <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input id="depositDate" type="date" class="rounded-xl border border-slate-300 px-3 py-3">
-          <select id="depositMember" class="rounded-xl border border-slate-300 px-3 py-3"></select>
-          <input id="depositAmount" type="number" min="0" step="0.01" placeholder="Amount"
-            class="rounded-xl border border-slate-300 px-3 py-3">
-          <button onclick="addDeposit()"
-            class="btn rounded-xl bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700">
-            Add Deposit
+          <input id="depositDate" type="date" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+          <select id="depositMember" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3"></select>
+          <input id="depositAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="টাকার পরিমাণ" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+          <button onclick="addDeposit()" class="rounded-xl bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700">জমা যোগ করুন</button>
+        </div>
+      </div>
+      <div id="depositCards" class="md:hidden space-y-2"></div>
+      <div class="table-wrap hidden md:block">
+        <table class="w-full min-w-[600px] text-left text-sm">
+          <thead class="border-b bg-slate-50 text-xs text-slate-500">
+            <tr><th class="p-3">তারিখ</th><th class="p-3">সদস্য</th><th class="p-3">টাকা</th><th class="p-3">অ্যাকশন</th></tr>
+          </thead>
+          <tbody id="depositTable"></tbody>
+          <tfoot id="depositFoot"></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- অতিরিক্ত খরচ প্যানেল -->
+    <section id="expensesPanel" data-nav-panel="true" class="hidden fade-in rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-receipt text-orange-600 mr-1"></i> অতিরিক্ত খরচ</h2>
+      <div id="extraFormArea" class="mb-5 hidden">
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <input id="extraDate" type="date" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+          <input id="extraItem" type="text" placeholder="খরচের বিবরণ" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+          <select id="extraCategory" class="w-full min-w-0 rounded-xl border border-slate-300 px-3 py-3">
+            <option value="non-food">অন্যান্য (নন-ফুড)</option>
+            <option value="food">খাবার</option>
+          </select>
+          <div class="flex gap-2">
+            <input id="extraAmount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="টাকার পরিমাণ" class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3">
+            <button onclick="addExtra()" class="rounded-xl bg-orange-600 px-4 py-3 font-bold text-white hover:bg-orange-700">যোগ</button>
+          </div>
+        </div>
+      </div>
+      <div id="extraCards" class="md:hidden space-y-2"></div>
+      <div class="table-wrap hidden md:block">
+        <table class="w-full min-w-[650px] text-left text-sm">
+          <thead class="border-b bg-slate-50 text-xs text-slate-500">
+            <tr><th class="p-3">তারিখ</th><th class="p-3">বিবরণ</th><th class="p-3">ধরন</th><th class="p-3">টাকা</th><th class="p-3">অ্যাকশন</th></tr>
+          </thead>
+          <tbody id="extraTable"></tbody>
+          <tfoot id="extraFoot"></tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- দৈনিক মিল প্যানেল -->
+    <section id="mealsPanel" data-nav-panel="true" class="hidden fade-in rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 class="text-lg font-bold"><i class="fa-solid fa-bowl-food text-purple-600 mr-1"></i> দৈনিক মিল</h2>
+          <p class="text-sm text-slate-500">যেকোনো তারিখে ক্লিক করুন — সেদিন কে কে মিল খেয়েছে দেখতে পাবেন।</p>
+        </div>
+        <span id="mealMonthBadge" class="self-start rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700"></span>
+      </div>
+
+      <div class="meal-cal-layout">
+        <div class="cal-card">
+          <div class="cal-title"><i class="fa-regular fa-calendar-days"></i><span id="calMonthLabel"></span></div>
+          <div class="cal-dow"><span>রবি</span><span>সোম</span><span>মঙ্গল</span><span>বুধ</span><span>বৃহ</span><span>শুক্র</span><span>শনি</span></div>
+          <div id="mealCalendar" class="cal-grid"></div>
+        </div>
+        <div id="mealDayDetail" class="day-card"></div>
+      </div>
+
+      <div id="mealFormArea" class="hidden mt-6 rounded-2xl border border-dashed border-purple-200 bg-purple-50/40 p-4">
+        <p class="mb-3 text-sm font-bold text-purple-800"><i class="fa-solid fa-pen-to-square mr-1"></i> মিল এন্ট্রি / এডিট</p>
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div class="sm:w-60">
+            <label for="mealDate" class="mb-1 block text-sm font-semibold">তারিখ</label>
+            <input id="mealDate" type="date" onchange="selectMealDate(this.value)" class="w-full rounded-xl border border-slate-300 px-3 py-3">
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="fillMeals('default')" class="rounded-xl border border-purple-200 bg-white px-3 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-50">ডিফল্ট মান</button>
+            <button type="button" onclick="fillMeals('zero')" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">সব শূন্য</button>
+          </div>
+        </div>
+        <div id="mealInputs" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button onclick="addMeal()" class="rounded-xl bg-purple-600 px-5 py-3 font-bold text-white hover:bg-purple-700">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> দৈনিক মিল সংরক্ষণ করুন
+          </button>
+          <button onclick="deleteMealDay()" class="rounded-xl bg-red-50 px-4 py-3 font-bold text-red-600 hover:bg-red-100">
+            <i class="fa-solid fa-trash mr-1"></i> এই দিনের এন্ট্রি মুছুন
           </button>
         </div>
       </div>
-
-      <div class="table-wrap">
-        <table class="w-full min-w-[600px] text-left text-sm">
-          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th class="p-3">Date</th><th class="p-3">Member</th><th class="p-3">Amount</th><th class="p-3">Action</th></tr>
-          </thead>
-          <tbody id="depositTable"></tbody>
-        </table>
-      </div>
     </section>
 
-    <!-- EXTRA EXPENSE -->
-    <section id="expensesPanel" data-nav-panel="true" class="hidden fade-in mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
-      <h2 class="mb-4 text-lg font-bold"><i class="fa-solid fa-receipt text-orange-600 mr-1"></i> Extra Expenses</h2>
-
-      <div id="extraFormArea" class="mb-5 hidden">
-        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input id="extraDate" type="date" class="rounded-xl border border-slate-300 px-3 py-3">
-          <input id="extraItem" type="text" placeholder="Expense item" class="rounded-xl border border-slate-300 px-3 py-3">
-          <select id="extraCategory" class="rounded-xl border border-slate-300 px-3 py-3">
-            <option value="non-food">Non-Food</option>
-            <option value="food">Food</option>
-          </select>
-          <div class="flex gap-2">
-            <input id="extraAmount" type="number" min="0" step="0.01" placeholder="Amount"
-              class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-3">
-            <button onclick="addExtra()"
-              class="btn rounded-xl bg-orange-600 px-4 py-3 font-bold text-white hover:bg-orange-700">
-              Add
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <table class="w-full min-w-[650px] text-left text-sm">
-          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th class="p-3">Date</th><th class="p-3">Item</th><th class="p-3">Category</th><th class="p-3">Amount</th><th class="p-3">Action</th></tr>
-          </thead>
-          <tbody id="extraTable"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- DAILY MEALS -->
-    <section id="mealsPanel" data-nav-panel="true" class="hidden fade-in mb-6 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
-      <div class="mb-4">
-        <h2 class="text-lg font-bold"><i class="fa-solid fa-bowl-food text-purple-600 mr-1"></i> Daily Meals</h2>
-        <p class="text-sm text-slate-500">
-          Each member's own meal is entered once per day. Guest meals are added on top of the 75 minimum.
-        </p>
-      </div>
-
-      <div id="mealFormArea" class="hidden">
-        <div class="mb-4">
-          <label class="mb-1 block text-sm font-semibold">Date</label>
-          <input id="mealDate" type="date" onchange="renderMealInputs()"
-            class="w-full rounded-xl border border-slate-300 px-3 py-3 sm:max-w-xs">
-        </div>
-
-        <div id="mealInputs" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
-
-        <button onclick="addMeal()"
-          class="mt-4 btn rounded-xl bg-purple-600 px-5 py-3 font-bold text-white hover:bg-purple-700">
-          <i class="fa-solid fa-floppy-disk mr-1"></i> Save Daily Meals
-        </button>
-      </div>
-
-      <div class="mt-5 table-wrap">
-        <table class="w-full min-w-[800px] text-left text-sm">
-          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
-            <tr><th class="p-3">Date</th><th class="p-3">Member</th><th class="p-3">Own</th><th class="p-3">Guest</th><th class="p-3">Billable</th><th class="p-3">Action</th></tr>
-          </thead>
-          <tbody id="mealTable"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- FINAL SUMMARY -->
-    <section id="summaryPanel" data-nav-panel="true" class="hidden fade-in mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+    <!-- চূড়ান্ত বিল প্যানেল -->
+    <section id="summaryPanel" data-nav-panel="true" class="hidden fade-in rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
       <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 class="text-lg font-bold"><i class="fa-solid fa-file-invoice-dollar text-indigo-600 mr-1"></i> Final Bill Summary</h2>
-          <p class="text-sm text-slate-500">75 minimum applies to own meals; guest meals are extra.</p>
+          <h2 class="text-lg font-bold"><i class="fa-solid fa-file-invoice-dollar text-indigo-600 mr-1"></i> চূড়ান্ত বিল সারসংক্ষেপ</h2>
+          <p class="text-sm text-slate-500">নিজের মিলে ন্যূনতম ৭৫ ধরা হয়; গেস্ট মিল আলাদাভাবে যোগ হয়।</p>
         </div>
-        <div class="w-full sm:max-w-xs">
-          <label for="viewerMemberSelect" class="mb-1 block text-sm font-semibold text-slate-700"><i class="fa-solid fa-user-check mr-1 text-indigo-500"></i> নিজের নাম নির্বাচন করুন</label>
-          <select id="viewerMemberSelect" onchange="renderSummary()" class="w-full rounded-xl border border-indigo-200 bg-white px-3 py-3 text-sm shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
-            <option value="">নাম নির্বাচন করুন...</option>
-          </select>
+        <div class="flex w-full items-end gap-2 sm:max-w-sm">
+          <div class="min-w-0 flex-1">
+            <label for="viewerMemberSelect" class="mb-1 block text-sm font-semibold text-slate-700"><i class="fa-solid fa-user-check mr-1 text-indigo-500"></i> নিজের নাম নির্বাচন করুন</label>
+            <select id="viewerMemberSelect" onchange="onViewerSelect(this.value)" class="w-full rounded-xl border border-indigo-200 bg-white px-3 py-3 text-sm shadow-sm outline-none">
+              <option value="">সব সদস্য</option>
+            </select>
+          </div>
+          <button type="button" onclick="window.print()" class="no-print rounded-xl border border-slate-200 bg-white px-3 py-3 text-slate-600 hover:bg-slate-50" aria-label="প্রিন্ট করুন" title="প্রিন্ট করুন"><i class="fa-solid fa-print"></i></button>
         </div>
       </div>
-      <div id="viewerBillHint" class="mb-4 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 p-3 text-sm text-slate-700">
-        <i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> নিজের হিসাব দেখতে তালিকা থেকে নিজের নাম নির্বাচন করুন।
-      </div>
+      <div id="viewerBillHint" class="mb-4 rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-sm text-slate-700"></div>
 
       <div id="summaryCards" class="summary-cards-view grid grid-cols-1 gap-3 sm:grid-cols-2"></div>
       <div class="table-wrap summary-table-view">
         <table class="w-full min-w-[1050px] text-left text-sm">
-          <thead class="border-b bg-slate-50 text-xs uppercase text-slate-500">
+          <thead class="border-b bg-slate-50 text-xs text-slate-500">
             <tr>
-              <th class="p-3">Member</th>
-              <th class="p-3">Own</th>
-              <th class="p-3">Guest</th>
-              <th class="p-3">Billable</th>
-              <th class="p-3">Meal Cost</th>
-              <th class="p-3">Extra</th>
-              <th class="p-3">Final Bill</th>
-              <th class="p-3">Deposit</th>
-              <th class="p-3">Balance</th>
+              <th class="p-3">সদস্য</th>
+              <th class="p-3">নিজের মিল</th>
+              <th class="p-3">গেস্ট</th>
+              <th class="p-3">বিলযোগ্য</th>
+              <th class="p-3">মিল খরচ</th>
+              <th class="p-3">অতিরিক্ত</th>
+              <th class="p-3">চূড়ান্ত বিল</th>
+              <th class="p-3">জমা</th>
+              <th class="p-3">ব্যালেন্স</th>
             </tr>
           </thead>
           <tbody id="summaryTable"></tbody>
+          <tfoot id="summaryFoot"></tfoot>
         </table>
       </div>
+      <p class="mt-3 text-xs text-slate-500">* চিহ্নিত সংখ্যায় ন্যূনতম ৭৫ মিল ধরা হয়েছে। ব্যালেন্স সবুজ মানে বাড়তি জমা আছে, লাল মানে বাকি আছে।</p>
     </section>
 
-    <!-- BACKUP / REPORT -->
-   <!-- EXCEL REPORT -->
-<section id="excelPanel" data-nav-panel="true" class="hidden fade-in mb-8 rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
-  <h2 class="mb-2 text-lg font-bold text-slate-800">
-    <i class="fa-solid fa-file-excel text-green-600 mr-2"></i>
-    Excel Report
-  </h2>
-
-  <p class="mb-4 text-sm text-slate-500">
-    Download this month's complete mess accounting report in Excel format.
-  </p>
-
-  <button
-    onclick="downloadExcelReport()"
-    class="btn rounded-xl bg-green-600 px-5 py-3 text-sm font-bold text-white
-           shadow-md transition-all duration-300 hover:bg-green-700
-           hover:shadow-lg active:scale-95"
-  >
-    <i class="fa-solid fa-file-excel mr-2"></i>
-    Download Excel Report
-  </button>
-</section>
+    <!-- এক্সেল রিপোর্ট প্যানেল -->
+    <section id="excelPanel" data-nav-panel="true" class="hidden fade-in rounded-2xl bg-white p-5 shadow-sm border border-slate-200">
+      <h2 class="mb-2 text-lg font-bold text-slate-800"><i class="fa-solid fa-file-excel text-green-600 mr-2"></i> এক্সেল রিপোর্ট</h2>
+      <p class="mb-4 text-sm text-slate-500">এই মাসের পূর্ণাঙ্গ মেস হিসাব (সারসংক্ষেপ, বাজার, খরচ, জমা ও দৈনিক মিল) এক্সেল ফরম্যাটে ডাউনলোড করুন।</p>
+      <button onclick="downloadExcelReport()" class="rounded-xl bg-green-600 px-5 py-3 text-sm font-bold text-white shadow-md hover:bg-green-700">
+        <i class="fa-solid fa-file-excel mr-2"></i> এক্সেল রিপোর্ট ডাউনলোড
+      </button>
+    </section>
 
   </main>
 
-  <div id="toast"
-    class="fixed bottom-5 right-5 z-[60] hidden max-w-sm rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-xl"></div>
-
-<script>
-const SUPABASE_URL = "https://cjnarttyrpiqtrkqynlb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_EqZUdrZefwhlzf-APECwCg_9nUM_BVa";
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-const now = new Date();
-const YEAR = now.getFullYear();
-const MONTH = now.getMonth() + 1;
-const PERIOD_KEY = `${YEAR}-${String(MONTH).padStart(2, "0")}`;
-const MONTH_LABEL = now.toLocaleString("en-US", { month: "long", year: "numeric" });
-let activePeriodKey = PERIOD_KEY;
-let activeMonthClosed = false;
-let availablePeriods = [];
-
-let currentUser = null;
-let profile = null;
-let settings = null;
-let data = {
-  members: [],
-  bazars: [],
-  extras: [],
-  deposits: [],
-  meals: []
-};
-let realtimeChannel = null;
-
-const $ = id => document.getElementById(id);
-const money = n => `৳${Number(n || 0).toFixed(2)}`;
-const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({
-  "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
-}[c]));
-
-function showToast(message, type="success") {
-  const el = $("toast");
-  el.textContent = message;
-  el.className = `fixed bottom-5 right-5 z-[60] max-w-sm rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-xl ${
-    type === "error" ? "bg-red-600" : "bg-slate-900"
-  }`;
-  el.classList.remove("hidden");
-  clearTimeout(window.toastTimer);
-  window.toastTimer = setTimeout(() => el.classList.add("hidden"), 2800);
-}
-
-function isAdmin() {
-  return profile?.role === "admin";
-}
-
-function isAssignedManager() {
-  return profile?.role === "admin" ||
-    (profile?.role === "moderator" && settings?.current_manager_id === currentUser?.id);
-}
-
-function canEdit() {
-  return isAssignedManager() &&
-    activePeriodKey === PERIOD_KEY &&
-    !activeMonthClosed;
-}
-
-function monthLabel(periodKey) {
-  const [year, month] = periodKey.split("-").map(Number);
-  return new Date(year, month - 1, 1).toLocaleString("en-US", {
-    month: "long", year: "numeric"
-  });
-}
-
-async function loadAvailableMonths() {
-  const tables = ["mess_months", "members", "bazars", "extra_expenses", "deposits", "meals"];
-  const responses = await Promise.all(tables.map(table =>
-    db.from(table).select("period_key")
-  ));
-  const periods = new Set([PERIOD_KEY]);
-  responses.forEach(response => {
-    if (!response.error) (response.data || []).forEach(row => {
-      if (row.period_key) periods.add(row.period_key);
-    });
-  });
-  availablePeriods = [...periods].sort().reverse();
-  const select = $("monthHistorySelect");
-  if (!select) return;
-  select.innerHTML = availablePeriods.map(key =>
-    `<option value="${key}">${escapeHTML(monthLabel(key))}${key === PERIOD_KEY ? " (Current)" : ""}</option>`
-  ).join("");
-  select.value = activePeriodKey;
-}
-
-async function loadActiveMonthStatus() {
-  const { data: monthRow, error } = await db
-    .from("mess_months")
-    .select("period_key, closed")
-    .eq("period_key", activePeriodKey)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Month status:", error);
-    // Keep legacy current-month status usable until the SQL migration is installed.
-    activeMonthClosed = activePeriodKey === PERIOD_KEY ? !!settings?.closed : true;
-    return;
-  }
-  activeMonthClosed = monthRow ? !!monthRow.closed : activePeriodKey !== PERIOD_KEY;
-}
-
-async function changeActiveMonth(periodKey) {
-  if (!periodKey || !availablePeriods.includes(periodKey)) return;
-  activePeriodKey = periodKey;
-  await loadActiveMonthStatus();
-  await loadData();
-  setupDateInputs();
-  updateUI();
-  renderMealInputs();
-  subscribeRealtime();
-}
-
-function todayString() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-}
-
-function setupDateInputs() {
-  ["bazarDate","depositDate","extraDate","mealDate"].forEach(id => {
-    const [year, month] = activePeriodKey.split("-").map(Number);
-    const lastDay = new Date(year, month, 0).getDate();
-    $(id).min = `${activePeriodKey}-01`;
-    $(id).max = todayString().startsWith(activePeriodKey) ? todayString() : `${activePeriodKey}-${String(lastDay).padStart(2, "0")}`;
-    $(id).value = todayString().startsWith(activePeriodKey) ? todayString() : `${activePeriodKey}-01`;
-  });
-}
-
-function showLogin() {
-  $("loginModal").classList.remove("hidden");
-  $("loginModal").classList.add("flex");
-}
-
-function openLogin() { showLogin(); }
-
-function closeLogin() {
-  $("loginModal").classList.add("hidden");
-  $("loginModal").classList.remove("flex");
-  $("loginError").classList.add("hidden");
-}
-
-$("loginForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  $("loginError").classList.add("hidden");
-
-  const email = $("loginEmail").value.trim();
-  const password = $("loginPassword").value;
-
-  const { error } = await db.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    $("loginError").textContent = error.message;
-    $("loginError").classList.remove("hidden");
-    return;
-  }
-
-  closeLogin();
-  showToast("Login successful");
-  await initialize();
-});
-
-async function logout() {
-  await db.auth.signOut();
-  showToast("Logged out");
-}
-
-async function loadSession() {
-  const { data: sessionData } = await db.auth.getSession();
-  currentUser = sessionData?.session?.user || null;
-
-  if (!currentUser) {
-    profile = null;
-    return;
-  }
-
-  const { data: p, error } = await db
-    .from("profiles")
-    .select("id, full_name, role")
-    .eq("id", currentUser.id)
-    .single();
-
-  if (error) {
-    showToast("Profile not found. Contact admin.", "error");
-    await db.auth.signOut();
-    currentUser = null;
-    profile = null;
-    return;
-  }
-
-  profile = p;
-}
-
-async function loadSettings() {
-  const { data: s, error } = await db
-    .from("mess_settings")
-    .select("id, current_manager_id, closed")
-    .eq("id", true)
-    .single();
-
-  if (error) {
-    console.error(error);
-    showToast("Settings could not be loaded.", "error");
-    return;
-  }
-
-  settings = s;
-}
-
-async function loadData() {
-  const [members, bazars, extras, deposits, meals] = await Promise.all([
-    db.from("members").select("*").eq("period_key", activePeriodKey).order("created_at"),
-    db.from("bazars").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false }),
-    db.from("extra_expenses").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false }),
-    db.from("deposits").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false }),
-    db.from("meals").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false })
-  ]);
-
-  const results = [members, bazars, extras, deposits, meals];
-  const bad = results.find(r => r.error);
-
-  if (bad) {
-    console.error(bad.error);
-    showToast("Data could not be loaded. Check Supabase SQL/RLS.", "error");
-    return;
-  }
-
-  data.members = members.data || [];
-  data.bazars = bazars.data || [];
-  data.extras = extras.data || [];
-  data.deposits = deposits.data || [];
-  data.meals = meals.data || [];
-}
-
-async function loadModerators() {
-  if (!isAdmin()) return;
-
-  // Profiles can be read by admin through RLS.
-  const { data: mods, error } = await db
-    .from("profiles")
-    .select("id, full_name, role")
-    .eq("role", "moderator")
-    .order("full_name");
-
-  if (error) {
-    console.error(error);
-    return;
-  }
-
-  const select = $("managerSelect");
-  select.innerHTML = `<option value="">No manager assigned</option>` +
-    (mods || []).map(m =>
-      `<option value="${m.id}" ${settings?.current_manager_id === m.id ? "selected" : ""}>
-        ${escapeHTML(m.full_name || "Moderator")}
-      </option>`
-    ).join("");
-}
-
-async function saveManager() {
-  if (!isAdmin()) return;
-
-  const id = $("managerSelect").value || null;
-
-  const { error } = await db
-    .from("mess_settings")
-    .update({ current_manager_id: id, updated_at: new Date().toISOString() })
-    .eq("id", true);
-
-  if (error) {
-    showToast(error.message, "error");
-    return;
-  }
-
-  await loadSettings();
-  updateUI();
-  showToast("Manager updated");
-}
-
-async function toggleMonthClose() {
-  if (!isAdmin()) return;
-  if (activePeriodKey !== PERIOD_KEY) {
-    showToast("Only the current month can be closed or reopened.", "error");
-    return;
-  }
-
-  const next = !activeMonthClosed;
-  const action = next ? "close" : "re-open";
-  const prompt = next
-    ? `Close ${monthLabel(activePeriodKey)} and carry all members into next month?`
-    : `Re-open ${monthLabel(activePeriodKey)}?`;
-  if (!confirm(prompt)) return;
-
-  if (next) {
-    const { error } = await db.rpc("close_mess_month_and_carry_members", {
-      p_period_key: activePeriodKey
-    });
-    if (error) {
-      showToast(error.message || "Could not close month. Run the Supabase SQL setup first.", "error");
-      return;
-    }
-  } else {
-    const { error } = await db.from("mess_months")
-      .upsert({ period_key: activePeriodKey, closed: false }, { onConflict: "period_key" });
-    if (error) {
-      showToast(error.message, "error");
-      return;
-    }
-    // Keep the legacy flag synchronized for older versions of the site.
-    await db.from("mess_settings")
-      .update({ closed: false, updated_at: new Date().toISOString() })
-      .eq("id", true);
-  }
-
-  await loadSettings();
-  await loadAvailableMonths();
-  await loadActiveMonthStatus();
-  updateUI();
-  showToast(next ? "Month closed. Members carried forward." : "Month re-opened");
-}
-
-async function addMember() {
-  if (!canEdit()) return;
-
-  const name = $("memberName").value.trim();
-  if (!name) return showToast("Enter member name", "error");
-
-  const { error } = await db.from("members").insert({
-    period_key: activePeriodKey,
-    name
-  });
-
-  if (error) return showToast(error.message, "error");
-
-  $("memberName").value = "";
-  await refreshData();
-  showToast("Member added");
-}
-
-async function deleteMember(id) {
-  if (!canEdit()) return;
-  if (!confirm("Delete this member? Related meals/deposits may be blocked by database rules.")) return;
-
-  const { error } = await db.from("members").delete().eq("id", id);
-  if (error) return showToast(error.message, "error");
-
-  await refreshData();
-  showToast("Member deleted");
-}
-
-async function addBazar() {
-  if (!canEdit()) return;
-
-  const date = $("bazarDate").value;
-  const item = $("bazarItem").value.trim();
-  const category = $("bazarCategory").value;
-  const amount = Number($("bazarAmount").value);
-
-  if (!date || !item || amount <= 0) return showToast("Fill all Big Bazar fields", "error");
-
-  const { error } = await db.from("bazars").insert({
-    period_key: activePeriodKey, date, item, category, amount
-  });
-
-  if (error) return showToast(error.message, "error");
-
-  $("bazarItem").value = "";
-  $("bazarAmount").value = "";
-  await refreshData();
-  showToast("Big Bazar added");
-}
-
-async function deleteBazar(id) {
-  if (!canEdit()) return;
-  if (!confirm("Delete this Big Bazar entry?")) return;
-
-  const { error } = await db.from("bazars").delete().eq("id", id);
-  if (error) return showToast(error.message, "error");
-
-  await refreshData();
-  showToast("Deleted");
-}
-
-async function addDeposit() {
-  if (!canEdit()) return;
-
-  const date = $("depositDate").value;
-  const member_id = $("depositMember").value;
-  const amount = Number($("depositAmount").value);
-
-  if (!date || !member_id || amount <= 0) return showToast("Fill all deposit fields", "error");
-
-  const { error } = await db.from("deposits").insert({
-    period_key: activePeriodKey, date, member_id, amount
-  });
-
-  if (error) return showToast(error.message, "error");
-
-  $("depositAmount").value = "";
-  await refreshData();
-  showToast("Deposit added");
-}
-
-async function deleteDeposit(id) {
-  if (!canEdit()) return;
-  if (!confirm("Delete this deposit?")) return;
-
-  const { error } = await db.from("deposits").delete().eq("id", id);
-  if (error) return showToast(error.message, "error");
-
-  await refreshData();
-  showToast("Deleted");
-}
-
-async function addExtra() {
-  if (!canEdit()) return;
-
-  const date = $("extraDate").value;
-  const item = $("extraItem").value.trim();
-  const category = $("extraCategory").value;
-  const amount = Number($("extraAmount").value);
-
-  if (!date || !item || amount <= 0) return showToast("Fill all expense fields", "error");
-
-  const { error } = await db.from("extra_expenses").insert({
-    period_key: activePeriodKey, date, item, category, amount
-  });
-
-  if (error) return showToast(error.message, "error");
-
-  $("extraItem").value = "";
-  $("extraAmount").value = "";
-  await refreshData();
-  showToast("Expense added");
-}
-
-async function deleteExtra(id) {
-  if (!canEdit()) return;
-  if (!confirm("Delete this expense?")) return;
-
-  const { error } = await db.from("extra_expenses").delete().eq("id", id);
-  if (error) return showToast(error.message, "error");
-
-  await refreshData();
-  showToast("Deleted");
-}
-
-function renderMealInputs() {
-  const container = $("mealInputs");
-  if (!data.members.length) {
-    container.innerHTML = `<div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Add members first.</div>`;
-    return;
-  }
-
-  const date = $("mealDate").value;
-  const existing = new Map(
-    data.meals.filter(m => m.date === date).map(m => [m.member_id, m])
-  );
-
-  container.innerHTML = data.members.map((m, i) => {
-    const row = existing.get(m.id);
-    return `
-      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 card-animate">
-        <p class="mb-3 font-bold">${escapeHTML(m.name)}</p>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="mb-1 block text-xs text-slate-500">Own Meal</label>
-            <input data-own="${m.id}" type="number" min="0" step="1"
-              value="${row ? Number(row.own_meal) : 0}"
-              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
-          </div>
-          <div>
-            <label class="mb-1 block text-xs text-slate-500">Guest</label>
-            <input data-guest="${m.id}" type="number" min="0" step="1"
-              value="${row ? Number(row.guest_meal) : 0}"
-              class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
-          </div>
-        </div>
+  <!-- নিচের ট্যাব বার -->
+  <nav id="tabbar" class="tabbar" style="--i:0" aria-label="প্রধান নেভিগেশন">
+    <span class="tab-indicator" aria-hidden="true"></span>
+    <button type="button" class="tab active" data-tab="0" onclick="showPanel('overview')"><i class="fa-solid fa-house"></i><span>হোম</span></button>
+    <button type="button" class="tab" data-tab="1" onclick="showPanel('mealsPanel')"><i class="fa-solid fa-bowl-food"></i><span>মিল</span></button>
+    <button type="button" class="tab" data-tab="2" onclick="showPanel('bazarPanel')"><i class="fa-solid fa-cart-shopping"></i><span>বাজার</span></button>
+    <button type="button" class="tab" data-tab="3" onclick="showPanel('summaryPanel')"><i class="fa-solid fa-file-invoice-dollar"></i><span>বিল</span></button>
+    <button type="button" class="tab" data-tab="4" onclick="openMore()"><i class="fa-solid fa-grip"></i><span>মেনু</span></button>
+  </nav>
+
+  <!-- মেনু শিট -->
+  <div id="moreSheet" class="more-sheet" aria-hidden="true">
+    <div class="more-backdrop" onclick="closeMore()"></div>
+    <div class="more-panel">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto mb-3"></div>
+      <p class="text-center font-bold mb-4 text-indigo-900">আরও অপশন</p>
+      <div class="more-grid">
+        <button type="button" data-nav="membersPanel" onclick="showPanel('membersPanel')" class="more-item" style="--c:#2563eb"><i class="fa-solid fa-users"></i><span>সদস্য</span></button>
+        <button type="button" data-nav="depositsPanel" onclick="showPanel('depositsPanel')" class="more-item" style="--c:#0284c7"><i class="fa-solid fa-money-bill-transfer"></i><span>জমা</span></button>
+        <button type="button" data-nav="expensesPanel" onclick="showPanel('expensesPanel')" class="more-item" style="--c:#ea580c"><i class="fa-solid fa-receipt"></i><span>অতিরিক্ত খরচ</span></button>
+        <button type="button" data-nav="excelPanel" onclick="showPanel('excelPanel')" class="more-item" style="--c:#059669"><i class="fa-solid fa-file-excel"></i><span>এক্সেল রিপোর্ট</span></button>
       </div>
-    `;
-  }).join("");
-}
+    </div>
+  </div>
 
-async function addMeal() {
-  if (!canEdit()) return;
+  <button id="mealFab" type="button" class="fab" aria-label="মিল এন্ট্রি" onclick="document.getElementById('mealFormArea').scrollIntoView({behavior:'smooth',block:'start'})"><i class="fa-solid fa-pen-to-square"></i></button>
 
-  const date = $("mealDate").value;
-  if (!date) return showToast("Select a date", "error");
+  <!-- টোস্ট -->
+  <div id="toast" role="status" aria-live="polite"></div>
 
-  const rows = data.members.map(m => {
-    const own = Math.max(0, Number(document.querySelector(`[data-own="${m.id}"]`)?.value || 0));
-    const guest = Math.max(0, Number(document.querySelector(`[data-guest="${m.id}"]`)?.value || 0));
-    return { member_id: m.id, own_meal: own, guest_meal: guest };
-  });
+  <!-- ফুটার -->
+  <footer class="site-footer">
+    <p class="text-slate-300 text-sm mb-2">ডিজাইন ও ডেভেলপ করেছেন <span class="text-rose-400">♥</span> দিয়ে</p>
+    <a href="https://www.facebook.com/techifystudio26" target="_blank" rel="noopener noreferrer" class="footer-author">
+      <i class="fa-brands fa-facebook"></i>
+      <span>টেকিফাই স্টুডিও</span>
+      <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-70"></i>
+    </a>
+    <p class="mt-4 text-xs text-indigo-300">© <span id="footerYear"></span> নাজমহল মেস মিল ম্যানেজার • সর্বস্বত্ব সংরক্ষিত।</p>
+  </footer>
 
-  for (const row of rows) {
-    const existing = data.meals.find(m => m.date === date && m.member_id === row.member_id);
+  <!-- মূল স্ক্রিপ্ট -->
+  <script>
+    const SUPABASE_URL = "https://cjnarttyrpiqtrkqynlb.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_EqZUdrZefwhlzf-APECwCg_9nUM_BVa";
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let result;
-    if (existing) {
-      result = await db.from("meals").update({
-        own_meal: row.own_meal,
-        guest_meal: row.guest_meal
-      }).eq("id", existing.id);
-    } else {
-      result = await db.from("meals").insert({
-        period_key: activePeriodKey,
-        date,
-        member_id: row.member_id,
-        own_meal: row.own_meal,
-        guest_meal: row.guest_meal
+    const now = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    const REAL_YEAR = now.getFullYear();
+    const REAL_MONTH = now.getMonth() + 1;
+    const REAL_KEY = `${REAL_YEAR}-${pad(REAL_MONTH)}`;
+    let YEAR = REAL_YEAR, MONTH = REAL_MONTH, PERIOD_KEY = REAL_KEY;
+    const monthLabelOf = key => { const [y, m] = key.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("bn-BD", { month: "long", year: "numeric" }); };
+    let MONTH_LABEL = monthLabelOf(PERIOD_KEY);
+    let monthStatus = {};      // period_key -> বন্ধ কিনা
+    let monthStatusMissing = false;
+    let allMembersRaw = [];    // সব মাসের সদস্য সারি
+    let idCanon = {};          // যেকোনো member id -> মূল id
+    const MIN_MEALS = 75;
+    const MY_NAME_KEY = "nazmahal_my_name";
+
+    let currentUser = null;
+    let profile = null;
+    let settings = null;
+    let managers = [];
+    let calc = null;
+    let data = { members: [], bazars: [], extras: [], deposits: [], meals: [] };
+    let realtimeChannel = null;
+    let currentPanel = "overviewPanel";
+    let selectedMealDate = null;
+    let mealDirty = false;
+    let myName = "";
+    let summaryFilter = "";
+    let busy = false;
+
+    try { myName = localStorage.getItem(MY_NAME_KEY) || ""; } catch (e) {}
+
+    const $ = id => document.getElementById(id);
+    const bnNum = (n, d = 0) => Number(n || 0).toLocaleString("bn-BD", { minimumFractionDigits: d, maximumFractionDigits: d });
+    const money = n => { n = Number(n || 0); return `${n < 0 ? "−" : ""}৳${bnNum(Math.abs(n), 2)}`; };
+    const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    }[c]));
+    const catLabel = c => c === "food" ? "খাবার" : "অন্যান্য";
+    const catBadge = c => `<span class="rounded-full px-2 py-1 text-xs ${c === "food" ? "bg-green-50 text-green-700" : "bg-orange-50 text-orange-700"}">${catLabel(c)}</span>`;
+
+    function fmtDate(ds, withWeekday = false) {
+      if (!ds) return "";
+      const [y, m, d] = String(ds).split("-").map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString("bn-BD", {
+        weekday: withWeekday ? "long" : undefined, day: "numeric", month: "long", year: "numeric"
       });
     }
 
-    if (result.error) {
-      showToast(result.error.message, "error");
-      return;
-    }
-  }
-
-  await refreshData();
-  showToast("Daily meals saved");
-}
-
-async function deleteMeal(id) {
-  if (!canEdit()) return;
-  if (!confirm("Delete this meal entry?")) return;
-
-  const { error } = await db.from("meals").delete().eq("id", id);
-  if (error) return showToast(error.message, "error");
-
-  await refreshData();
-  showToast("Deleted");
-}
-
-function memberName(id) {
-  return data.members.find(m => m.id === id)?.name || "Unknown";
-}
-
-function calculate() {
-  const ownByMember = {};
-  const guestByMember = {};
-
-  data.members.forEach(m => {
-    ownByMember[m.id] = 0;
-    guestByMember[m.id] = 0;
-  });
-
-  data.meals.forEach(m => {
-    if (ownByMember[m.member_id] !== undefined) {
-      ownByMember[m.member_id] += Number(m.own_meal || 0);
-      guestByMember[m.member_id] += Number(m.guest_meal || 0);
-    }
-  });
-
-  const totalFoodCost =
-    data.bazars.filter(x => x.category === "food").reduce((s,x) => s + Number(x.amount || 0), 0) +
-    data.extras.filter(x => x.category === "food").reduce((s,x) => s + Number(x.amount || 0), 0);
-
-  const totalNonFoodCost =
-    data.bazars.filter(x => x.category === "non-food").reduce((s,x) => s + Number(x.amount || 0), 0) +
-    data.extras.filter(x => x.category === "non-food").reduce((s,x) => s + Number(x.amount || 0), 0);
-
-  const totalBillableMeals = data.members.reduce((sum, m) =>
-    sum + Math.max(ownByMember[m.id] || 0, 75) + (guestByMember[m.id] || 0), 0);
-
-  const totalBoarder = data.members.length;
-  const mealRate = totalBillableMeals ? totalFoodCost / totalBillableMeals : 0;
-  const extraRate = totalBoarder ? totalNonFoodCost / totalBoarder : 0;
-
-  const depositByMember = {};
-  data.members.forEach(m => depositByMember[m.id] = 0);
-  data.deposits.forEach(d => {
-    if (depositByMember[d.member_id] !== undefined) {
-      depositByMember[d.member_id] += Number(d.amount || 0);
-    }
-  });
-
-  const rows = data.members.map(m => {
-    const own = ownByMember[m.id] || 0;
-    const guest = guestByMember[m.id] || 0;
-    const billable = Math.max(own, 75) + guest;
-    const mealCost = billable * mealRate;
-    const finalBill = mealCost + extraRate;
-    const deposit = depositByMember[m.id] || 0;
-    const balance = deposit - finalBill;
-
-    return { member: m, own, guest, billable, mealCost, extraRate, finalBill, deposit, balance };
-  });
-
-  return {
-    totalFoodCost, totalNonFoodCost, totalBillableMeals,
-    totalBoarder, mealRate, extraRate, depositByMember, rows
-  };
-}
-
-function renderMembers() {
-  $("memberList").innerHTML = data.members.length
-    ? data.members.map(m => `
-      <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 card-animate">
-        <span class="font-semibold">${escapeHTML(m.name)}</span>
-        ${canEdit() ? `<button onclick="deleteMember('${m.id}')" class="text-red-500 hover:text-red-700" title="Delete">
-          <i class="fa-solid fa-trash"></i>
-        </button>` : ""}
-      </div>
-    `).join("")
-    : `<p class="text-sm text-slate-500">No members added yet.</p>`;
-
-  $("depositMember").innerHTML = data.members.length
-    ? `<option value="">Select member</option>` + data.members.map(m =>
-      `<option value="${m.id}">${escapeHTML(m.name)}</option>`).join("")
-    : `<option value="">No members</option>`;
-}
-
-function renderBazar() {
-  $("bazarCount").textContent = `${data.bazars.length} entries`;
-
-  $("bazarTable").innerHTML = data.bazars.length
-    ? data.bazars.map(x => `
-      <tr class="border-b last:border-0">
-        <td class="p-3">${escapeHTML(x.date)}</td>
-        <td class="p-3 font-medium">${escapeHTML(x.item)}</td>
-        <td class="p-3">${x.category === "food"
-          ? '<span class="rounded-full bg-green-50 px-2 py-1 text-xs text-green-700">Food</span>'
-          : '<span class="rounded-full bg-orange-50 px-2 py-1 text-xs text-orange-700">Non-Food</span>'}</td>
-        <td class="p-3 font-semibold">${money(x.amount)}</td>
-        <td class="p-3">${canEdit() ? `<button onclick="deleteBazar('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
-      </tr>
-    `).join("")
-    : `<tr><td colspan="5" class="p-5 text-center text-slate-500">No Big Bazar entries.</td></tr>`;
-}
-
-function renderDeposits() {
-  $("depositTable").innerHTML = data.deposits.length
-    ? data.deposits.map(x => `
-      <tr class="border-b last:border-0">
-        <td class="p-3">${escapeHTML(x.date)}</td>
-        <td class="p-3 font-medium">${escapeHTML(memberName(x.member_id))}</td>
-        <td class="p-3 font-semibold">${money(x.amount)}</td>
-        <td class="p-3">${canEdit() ? `<button onclick="deleteDeposit('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
-      </tr>
-    `).join("")
-    : `<tr><td colspan="4" class="p-5 text-center text-slate-500">No deposits.</td></tr>`;
-}
-
-function renderExtras() {
-  $("extraTable").innerHTML = data.extras.length
-    ? data.extras.map(x => `
-      <tr class="border-b last:border-0">
-        <td class="p-3">${escapeHTML(x.date)}</td>
-        <td class="p-3 font-medium">${escapeHTML(x.item)}</td>
-        <td class="p-3">${x.category === "food"
-          ? '<span class="rounded-full bg-green-50 px-2 py-1 text-xs text-green-700">Food</span>'
-          : '<span class="rounded-full bg-orange-50 px-2 py-1 text-xs text-orange-700">Non-Food</span>'}</td>
-        <td class="p-3 font-semibold">${money(x.amount)}</td>
-        <td class="p-3">${canEdit() ? `<button onclick="deleteExtra('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
-      </tr>
-    `).join("")
-    : `<tr><td colspan="5" class="p-5 text-center text-slate-500">No extra expenses.</td></tr>`;
-}
-
-function renderMeals() {
-  $("mealTable").innerHTML = data.meals.length
-    ? data.meals.map(x => {
-      const billable = Math.max(Number(x.own_meal || 0), 75) + Number(x.guest_meal || 0);
-      return `
-        <tr class="border-b last:border-0">
-          <td class="p-3">${escapeHTML(x.date)}</td>
-          <td class="p-3 font-medium">${escapeHTML(memberName(x.member_id))}</td>
-          <td class="p-3">${Number(x.own_meal || 0)}</td>
-          <td class="p-3">${Number(x.guest_meal || 0)}</td>
-          <td class="p-3 font-bold">${billable}</td>
-          <td class="p-3">${canEdit() ? `<button onclick="deleteMeal('${x.id}')" class="text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
-        </tr>
-      `;
-    }).join("")
-    : `<tr><td colspan="6" class="p-5 text-center text-slate-500">No meal entries.</td></tr>`;
-}
-
-function renderSummary() {
-  const c = calculate();
-  const select = $("viewerMemberSelect");
-  if (select) {
-    const previous = select.value;
-    const memberOptions = data.members.map(m => `<option value="${escapeHTML(m.id)}">${escapeHTML(m.name)}</option>`).join("");
-    select.innerHTML = `<option value="">নাম নির্বাচন করুন...</option>${memberOptions}`;
-    if (data.members.some(m => String(m.id) === previous)) select.value = previous;
-  }
-
-  // Public/read-only viewers see only the member they select. Editors retain the full summary.
-  const selectedId = select?.value || "";
-  const isReadOnly = !canEdit();
-  const visibleRows = isReadOnly
-    ? (selectedId ? c.rows.filter(r => String(r.member.id) === selectedId) : [])
-    : (selectedId ? c.rows.filter(r => String(r.member.id) === selectedId) : c.rows);
-
-  if ($("viewerBillHint")) {
-    $("viewerBillHint").innerHTML = isReadOnly
-      ? (selectedId
-          ? `<i class="fa-solid fa-shield-halved mr-1 text-indigo-500"></i> ${escapeHTML(data.members.find(m => String(m.id) === selectedId)?.name || "আপনার")} — নিচে শুধু নির্বাচিত সদস্যের হিসাব দেখানো হচ্ছে।`
-          : `<i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> নিজের হিসাব দেখতে তালিকা থেকে নিজের নাম নির্বাচন করুন।`)
-      : `<i class="fa-solid fa-eye mr-1 text-indigo-500"></i> সব সদস্যের হিসাব দেখা যাচ্ছে। চাইলে নাম নির্বাচন করে একজনের হিসাবও দেখতে পারবেন।`;
-  }
-
-  const emptyMessage = isReadOnly && !selectedId
-    ? "নিজের হিসাব দেখতে উপরের তালিকা থেকে নাম নির্বাচন করুন।"
-    : "No members.";
-  if (!visibleRows.length) {
-    $("summaryTable").innerHTML = `<tr><td colspan="9" class="p-5 text-center text-slate-500">${emptyMessage}</td></tr>`;
-    $("summaryCards").innerHTML = `<div class="rounded-2xl border border-dashed border-slate-300 bg-white/80 p-5 text-center text-sm text-slate-500">${emptyMessage}</div>`;
-    return;
-  }
-  $("summaryTable").innerHTML = visibleRows.map(r => {
-    const balanceClass = r.balance >= 0 ? "text-emerald-600" : "text-red-600";
-    const balanceText = r.balance >= 0 ? `${money(r.balance)} (পাবে)` : `${money(Math.abs(r.balance))} (দিতে হবে)`;
-    return `<tr class="border-b last:border-0"><td class="p-3 font-bold">${escapeHTML(r.member.name)}</td><td class="p-3">${r.own}</td><td class="p-3">${r.guest}</td><td class="p-3 font-bold">${r.billable}</td><td class="p-3">${money(r.mealCost)}</td><td class="p-3">${money(r.extraRate)}</td><td class="p-3 font-bold">${money(r.finalBill)}</td><td class="p-3">${money(r.deposit)}</td><td class="p-3 font-bold ${balanceClass}">${balanceText}</td></tr>`;
-  }).join("");
-  $("summaryCards").innerHTML = visibleRows.map(r => {
-    const positive = r.balance >= 0;
-    const balanceClass = positive ? "text-emerald-700 bg-emerald-50 border-emerald-100" : "text-red-700 bg-red-50 border-red-100";
-    const balanceText = positive ? `${money(r.balance)} পাবে` : `${money(Math.abs(r.balance))} দিতে হবে`;
-    const item = (label, value, extra = "") => `<div class="flex items-center justify-between gap-3 border-b border-slate-100 py-2 last:border-0"><span class="text-xs text-slate-500">${label}</span><span class="text-sm font-semibold text-slate-800 ${extra}">${value}</span></div>`;
-    return `<article class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm"><div class="flex items-center justify-between gap-3 bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 px-4 py-3 text-white"><div class="min-w-0"><p class="text-[10px] font-bold uppercase tracking-widest text-white/75">Member</p><h3 class="truncate text-base font-extrabold">${escapeHTML(r.member.name)}</h3></div><span class="rounded-full bg-white/20 px-3 py-1 text-xs font-bold">${r.billable} billable</span></div><div class="p-4">${item("Own meals", r.own)}${item("Guest meals", r.guest)}${item("Meal cost", money(r.mealCost))}${item("Extra cost", money(r.extraRate))}<div class="my-2 rounded-xl bg-indigo-50 px-3 py-3"><p class="text-xs text-indigo-600">Final Bill</p><p class="text-xl font-extrabold text-indigo-800">${money(r.finalBill)}</p></div>${item("Deposit", money(r.deposit))}<div class="mt-3 rounded-xl border px-3 py-3 ${balanceClass}"><p class="text-xs opacity-80">Balance</p><p class="text-lg font-extrabold">${balanceText}</p></div></div></article>`;
-  }).join("");
-}
-
-function updateDashboard() {
-  const c = calculate();
-
-  $("totalBoarder").textContent = c.totalBoarder;
-  $("totalMeals").textContent = c.totalBillableMeals;
-  $("totalFoodCost").textContent = money(c.totalFoodCost);
-  $("mealRate").textContent = money(c.mealRate);
-  $("totalNonFoodCost").textContent = money(c.totalNonFoodCost);
-  $("extraRate").textContent = money(c.extraRate);
-
-  const totalExpense = c.totalFoodCost + c.totalNonFoodCost;
-  const totalDeposit = data.deposits.reduce((s,x) => s + Number(x.amount || 0), 0);
-
-  $("totalExpense").textContent = money(totalExpense);
-  $("totalDeposit").textContent = money(totalDeposit);
-  $("remainingMoney").textContent = money(totalDeposit - totalExpense);
-}
-
-function updateUI() {
-  $("currentMonthLabel").textContent = MONTH_LABEL;
-  if ($("monthHistorySelect")) $("monthHistorySelect").value = activePeriodKey;
-  // Account status is for signed-in Admin/Moderator accounts only; public viewers do not need it.
-  $("accountStatusPanel").classList.toggle("hidden", !currentUser);
-
-  $("loginBtn").classList.toggle("hidden", !!currentUser);
-  $("logoutBtn").classList.toggle("hidden", !currentUser);
-
-  const badge = $("roleBadge");
-  badge.classList.toggle("hidden", !currentUser);
-
-  if (currentUser) {
-    badge.textContent = profile?.role === "admin" ? "ADMIN" : "MODERATOR";
-    badge.className = `rounded-full px-3 py-1 text-xs font-bold ${
-      profile?.role === "admin"
-        ? "bg-purple-100 text-purple-700"
-        : "bg-blue-100 text-blue-700"
-    }`;
-  }
-
-  $("managerPanel").classList.toggle("hidden", !currentUser);
-
-  if (currentUser) {
-    $("loggedUserText").textContent = profile?.full_name || currentUser.email;
-    $("managerText").textContent =
-      profile?.role === "admin"
-        ? "You have full administrative control."
-        : settings?.current_manager_id === currentUser.id
-          ? "You are the currently assigned manager."
-          : "You are a moderator, but not the currently assigned manager.";
-  }
-
-  $("adminControls").classList.toggle("hidden", !isAdmin());
-  $("adminManagerBox").classList.toggle("hidden", !isAdmin());
-
-  $("monthStatusText").textContent = activeMonthClosed ? "Closed" : "Open";
-  $("monthStatusDot").className =
-    `h-3 w-3 rounded-full ${activeMonthClosed ? "bg-red-500" : "bg-emerald-500"}`;
-
-  $("closeMonthBtn").classList.toggle("hidden", activePeriodKey !== PERIOD_KEY);
-  $("closeMonthBtn").innerHTML = activeMonthClosed
-    ? '<i class="fa-solid fa-lock-open mr-1"></i> Re-open Month'
-    : '<i class="fa-solid fa-lock mr-1"></i> Close Month';
-
-  const editable = canEdit();
-
-  ["memberFormArea","bazarFormArea","depositFormArea","extraFormArea","mealFormArea"]
-    .forEach(id => $(id).classList.toggle("hidden", !editable));
-
-  $("viewerNotice").innerHTML = activePeriodKey !== PERIOD_KEY
-    ? `<i class="fa-solid fa-clock-rotate-left mr-1"></i> ${escapeHTML(monthLabel(activePeriodKey))} history — read-only for everyone.`
-    : editable
-    ? `<i class="fa-solid fa-pen-to-square mr-1"></i> You can edit this month's হিসাব.`
-    : currentUser
-      ? `<i class="fa-solid fa-eye mr-1"></i> View mode. Only the assigned manager can edit; Admin has full control.`
-      : `<i class="fa-solid fa-eye mr-1"></i> Public Viewer mode. Login is required only for Admin/Moderator actions.`;
-
-  renderMembers();
-  renderBazar();
-  renderDeposits();
-  renderExtras();
-  renderMeals();
-  renderSummary();
-  updateDashboard();
-
-  if (currentUser && isAdmin()) loadModerators();
-}
-
-async function refreshData() {
-  await loadData();
-  updateUI();
-  renderMealInputs();
-}
-
-function subscribeRealtime() {
-  if (realtimeChannel) db.removeChannel(realtimeChannel);
-
-  realtimeChannel = db.channel(`mess-live-${activePeriodKey}`)
-    .on("postgres_changes",
-      { event: "*", schema: "public", table: "members", filter: `period_key=eq.${activePeriodKey}` },
-      async () => { await refreshData(); })
-    .on("postgres_changes",
-      { event: "*", schema: "public", table: "bazars", filter: `period_key=eq.${activePeriodKey}` },
-      async () => { await refreshData(); })
-    .on("postgres_changes",
-      { event: "*", schema: "public", table: "extra_expenses", filter: `period_key=eq.${activePeriodKey}` },
-      async () => { await refreshData(); })
-    .on("postgres_changes",
-      { event: "*", schema: "public", table: "deposits", filter: `period_key=eq.${activePeriodKey}` },
-      async () => { await refreshData(); })
-    .on("postgres_changes",
-      { event: "*", schema: "public", table: "meals", filter: `period_key=eq.${activePeriodKey}` },
-      async () => { await refreshData(); })
-    .on("postgres_changes",
-      { event: "*", schema: "public", table: "mess_settings", filter: "id=eq.true" },
-      async () => {
-        await loadSettings();
-        await loadActiveMonthStatus();
-        updateUI();
-      })
-    .subscribe(status => {
-      console.log("Realtime:", status);
-    });
-}
-
-async function downloadJSONBackup() {
-  const backup = {
-    exported_at: new Date().toISOString(),
-    period_key: activePeriodKey,
-    members: data.members,
-    bazars: data.bazars,
-    extras: data.extras,
-    deposits: data.deposits,
-    meals: data.meals
-  };
-
-  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `mess-backup-${activePeriodKey}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function downloadExcelReport() {
-  const c = calculate();
-
-  const summary = c.rows.map(r => ({
-    Member: r.member.name,
-    "Own Meal": r.own,
-    "Guest Meal": r.guest,
-    "Billable Meal": r.billable,
-    "Meal Cost": Number(r.mealCost.toFixed(2)),
-    "Extra Rate": Number(r.extraRate.toFixed(2)),
-    "Final Bill": Number(r.finalBill.toFixed(2)),
-    Deposit: Number(r.deposit.toFixed(2)),
-    Balance: Number(r.balance.toFixed(2)),
-    Status: r.balance >= 0 ? "Will Get" : "Will Pay"
-  }));
-
-  const wb = XLSX.utils.book_new();
-  const addSheet = (name, rows) =>
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), name);
-
-  addSheet("Summary", [{
-    Month: MONTH_LABEL,
-    Boarder: c.totalBoarder,
-    "Billable Meals": c.totalBillableMeals,
-    "Food Cost": c.totalFoodCost,
-    "Meal Rate": c.mealRate,
-    "Non-Food Cost": c.totalNonFoodCost,
-    "Extra Rate": c.extraRate,
-    "Total Deposit": data.deposits.reduce((s,x)=>s+Number(x.amount||0),0)
-  }]);
-
-  addSheet("Members", data.members.map(x => ({Name:x.name})));
-  addSheet("Big Bazar", data.bazars.map(x => ({
-    Date:x.date, Item:x.item, Category:x.category, Amount:Number(x.amount)
-  })));
-  addSheet("Extra Expenses", data.extras.map(x => ({
-    Date:x.date, Item:x.item, Category:x.category, Amount:Number(x.amount)
-  })));
-  addSheet("Deposits", data.deposits.map(x => ({
-    Date:x.date, Member:memberName(x.member_id), Amount:Number(x.amount)
-  })));
-  addSheet("Meals", data.meals.map(x => ({
-    Date:x.date, Member:memberName(x.member_id),
-    "Own Meal":Number(x.own_meal),
-    "Guest Meal":Number(x.guest_meal),
-    "Billable Meal":Math.max(Number(x.own_meal),75)+Number(x.guest_meal)
-  })));
-  addSheet("Final Bill", summary);
-
-  XLSX.writeFile(wb, `mess-report-${activePeriodKey}.xlsx`);
-}
-
-
-function showPanel(panelId) {
-  const targetPanelId = panelId === 'overview' ? 'overviewPanel' : panelId;
-
-  document.querySelectorAll('[data-nav-panel="true"]').forEach(panel => {
-    panel.classList.toggle('hidden', panel.id !== targetPanelId);
-  });
-
-  document.querySelectorAll('[data-nav]').forEach(button => {
-    button.classList.toggle('nav-active', button.dataset.nav === panelId);
-  });
-
-  // Keep the selected section directly below Quick Navigation in view.
-  const navSection = document.querySelector('[data-nav="overview"]')?.closest('section');
-  if (navSection) navSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-async function initialize() {
-  await loadSession();
-  await loadSettings();
-  await loadAvailableMonths();
-  await loadActiveMonthStatus();
-  await loadData();
-
-  setupDateInputs();
-  updateUI();
-  renderMealInputs();
-  subscribeRealtime();
-}
-
-db.auth.onAuthStateChange(async (_event, session) => {
-  currentUser = session?.user || null;
-  if (currentUser) {
-    await loadSession();
-  } else {
-    profile = null;
-  }
-  await loadSettings();
-  await loadAvailableMonths();
-  await loadActiveMonthStatus();
-  await loadData();
-  updateUI();
-  renderMealInputs();
-});
-
-initialize();
-</script>
-
-<!-- Premium Footer -->
-<footer class="site-footer">
-  <div class="footer-glow" aria-hidden="true"></div>
-  <p class="footer-credit">Designed &amp; Developed with <span class="footer-heart">♥</span> by</p>
-  <a href="https://www.facebook.com/profile.php?id=61574874521197" target="_blank" rel="noopener noreferrer" class="footer-author">
-    <i class="fa-brands fa-facebook" aria-hidden="true"></i>
-    <span>SAIKAT RIAD</span>
-    <i class="fa-solid fa-arrow-up-right-from-square footer-external" aria-hidden="true"></i>
-  </a>
-  <p class="footer-copyright">© <span id="footerYear"></span> Nazmahal Mess Meal Manager <span class="footer-dot">•</span> All rights reserved.</p>
-</footer>
-<style>
-  .site-footer{
-    position:relative;isolation:isolate;overflow:hidden;
-    box-sizing:border-box;width:100%;max-width:100%;min-width:0;
-    margin:48px 0 0;padding:28px clamp(16px,3vw,44px);
-    display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.5fr);
-    align-items:center;justify-items:center;column-gap:clamp(18px,3vw,42px);
-    text-align:center;color:#dbeafe;
-    background:linear-gradient(120deg,#0f172a,#172554,#312e81,#0f766e,#0f172a);
-    background-size:300% 300%;animation:footerGradientFlow 14s ease infinite;
-    border-top:1px solid rgba(125,211,252,.38)
-  }
-  .site-footer>*{min-width:0;max-width:100%}
-  .site-footer:before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 15% 20%,rgba(56,189,248,.18),transparent 35%),radial-gradient(circle at 85% 80%,rgba(167,139,250,.2),transparent 38%)}
-  .footer-glow{position:absolute;top:-55px;left:50%;width:240px;height:100px;transform:translateX(-50%);background:#38bdf8;filter:blur(75px);opacity:.17;pointer-events:none}
-  .footer-credit{margin:0;font-size:14px;letter-spacing:.04em;color:#cbd5e1;line-height:1.7}
-  .footer-heart{display:inline-block;color:#fb7185;animation:footerHeartbeat 1.4s ease-in-out infinite}
-  .footer-author{position:relative;display:inline-flex;align-items:center;gap:9px;color:#7dd3fc;font-size:18px;font-weight:800;text-decoration:none;transition:color .3s,transform .3s,text-shadow .3s}
-  .footer-author:hover{color:#fff;transform:translateY(-3px);text-shadow:0 0 18px rgba(125,211,252,.65)}
-  .footer-author .fa-facebook{font-size:21px}
-  .footer-external{font-size:10px;opacity:.7}
-  .footer-copyright{margin:0;color:#a5b4fc;font-size:12px;letter-spacing:.025em;line-height:1.8;overflow-wrap:anywhere}
-  .footer-dot{padding:0 5px;color:#67e8f9}
-  @keyframes footerGradientFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-  @keyframes footerHeartbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
-  @media(max-width:767px){
-    .site-footer{grid-template-columns:minmax(0,1fr);row-gap:10px;padding:27px 16px 22px}
-    .footer-credit{font-size:13px}
-    .footer-author{font-size:17px}
-    .footer-copyright{max-width:34rem;font-size:11px}
-  }
-  @media(min-width:768px) and (max-width:1023px){
-    .site-footer{grid-template-columns:minmax(0,1fr) auto;row-gap:12px}
-    .footer-copyright{grid-column:1/-1}
-  }
-  @media(prefers-reduced-motion:reduce){.site-footer,.footer-heart{animation:none}.footer-author{transition:none}}
-
-
-    #monthHistorySelect option { color: #1e293b; background: #fff; }
-    /* Responsive entry forms: amount and action always occupy usable width */
-    #bazarFormArea .grid, #extraFormArea .grid {
-      display: grid !important;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      align-items: stretch;
-    }
-    #bazarFormArea input, #bazarFormArea select,
-    #extraFormArea input, #extraFormArea select {
-      width: 100%;
-      min-width: 0;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    #bazarFormArea .flex, #extraFormArea .flex {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      min-width: 0;
-      gap: 8px;
-    }
-    #bazarFormArea button, #extraFormArea button {
-      min-width: 76px;
-      white-space: nowrap;
-    }
-    @media (max-width: 767px) {
-      #bazarFormArea .grid, #extraFormArea .grid {
-        grid-template-columns: minmax(0, 1fr) !important;
-      }
-      #bazarFormArea .flex, #extraFormArea .flex {
-        grid-template-columns: minmax(0, 1fr) !important;
-      }
-      #bazarFormArea button, #extraFormArea button {
-        width: 100%;
-      }
-    }
-    @media (min-width: 768px) and (max-width: 1023px) {
-      #bazarFormArea .grid, #extraFormArea .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    /* FINAL BILL DISPLAY FIX: cards on mobile only, table on PC */
-    @media screen and (min-width: 768px) {
-      #summaryPanel #summaryCards,
-      #summaryPanel .summary-cards-view { display: none !important; visibility: hidden !important; }
-      #summaryPanel .summary-table-view { display: block !important; visibility: visible !important; width: 100% !important; }
-      #summaryPanel .summary-table-view table { display: table !important; width: 100% !important; min-width: 1050px !important; }
-    }
-    @media screen and (max-width: 767px) {
-      #summaryPanel #summaryCards,
-      #summaryPanel .summary-cards-view { display: grid !important; visibility: visible !important; }
-      #summaryPanel .summary-table-view { display: none !important; visibility: hidden !important; }
-    }
-</style>
-<script>
-  (function(){var year=document.getElementById('footerYear');if(year)year.textContent=new Date().getFullYear();})();
-</script>
-
-<script>
-  // Elements softly rise into view when the visitor scrolls down to them.
-  document.addEventListener("DOMContentLoaded", () => {
-    const selector = [
-      "main > section",
-      "main [data-nav-panel='true']",
-      "main .table-wrap",
-      "main form",
-      "main .grid > div",
-      "main .rounded-2xl"
-    ].join(",");
-    const targets = [...new Set(document.querySelectorAll(selector))];
-    targets.forEach((el, i) => {
-      if (!el.classList.contains("hidden")) {
-        el.classList.add("scroll-reveal");
-        el.classList.add("reveal-delay-" + ((i % 3) + 1));
-      }
-    });
-    if (!("IntersectionObserver" in window)) {
-      targets.forEach(el => el.classList.add("is-visible"));
-      return;
-    }
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && !entry.target.classList.contains("hidden")) {
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.06, rootMargin: "0px 0px -45px 0px" });
-    targets.forEach(el => {
-      if (!el.classList.contains("hidden")) observer.observe(el);
-    });
-
-    // When a navigation panel is opened, animate its contents into view too.
-    const originalShowPanel = window.showPanel;
-    if (typeof originalShowPanel === "function") {
-      window.showPanel = function(panelId) {
-        originalShowPanel(panelId);
-        const panel = document.getElementById(panelId === "overview" ? "overviewPanel" : panelId);
-        if (!panel) return;
-        panel.classList.remove("is-visible");
-        requestAnimationFrame(() => {
-          panel.classList.add("is-visible");
-          panel.querySelectorAll(".table-wrap, .grid > div, .rounded-2xl").forEach((el, i) => {
-            el.classList.add("scroll-reveal", "reveal-delay-" + ((i % 3) + 1));
-            el.classList.remove("is-visible");
-            requestAnimationFrame(() => {
-              if (!el.classList.contains("hidden")) el.classList.add("is-visible");
-            });
-          });
-        });
+    function lock(fn) {
+      return async function (...args) {
+        if (busy) return;
+        busy = true;
+        try { return await fn.apply(this, args); }
+        finally { busy = false; }
       };
     }
-  });
-</script>
+
+    let toastTimer;
+    function showToast(message, type = "success") {
+      const el = $("toast");
+      el.textContent = message;
+      el.className = `show ${type === "error" ? "err" : ""}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+    }
+
+    function isAdmin() { return profile?.role === "admin"; }
+    function isAssignedManager() {
+      return profile?.role === "admin" || (profile?.role === "moderator" && settings?.current_manager_id === currentUser?.id);
+    }
+    function isClosed() {
+      if (monthStatus[PERIOD_KEY] !== undefined) return !!monthStatus[PERIOD_KEY];
+      return monthStatusMissing && PERIOD_KEY === REAL_KEY ? !!settings?.closed : false;
+    }
+    function canEdit() { return isAssignedManager() && !isClosed(); }
+
+    function todayString() {
+      const d = new Date();
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function setupDateInputs() {
+      const today = todayString();
+      const inMonth = today.startsWith(PERIOD_KEY);
+      ["bazarDate", "depositDate", "extraDate", "mealDate"].forEach(id => {
+        $(id).min = `${PERIOD_KEY}-01`;
+        $(id).max = inMonth ? today : `${PERIOD_KEY}-${pad(new Date(YEAR, MONTH, 0).getDate())}`;
+        $(id).value = inMonth ? today : `${PERIOD_KEY}-01`;
+      });
+    }
+
+    /* ===== লগইন / লগআউট ===== */
+    function openLogin() { $("loginModal").classList.remove("hidden"); $("loginModal").classList.add("flex"); setTimeout(() => $("loginEmail").focus(), 50); }
+    function closeLogin() { $("loginModal").classList.add("hidden"); $("loginModal").classList.remove("flex"); $("loginError").classList.add("hidden"); }
+    function togglePassword() {
+      const inp = $("loginPassword");
+      const show = inp.type === "password";
+      inp.type = show ? "text" : "password";
+      $("pwToggle").innerHTML = `<i class="fa-regular ${show ? "fa-eye-slash" : "fa-eye"}"></i>`;
+    }
+
+    function loginErrorBn(msg) {
+      const m = String(msg || "").toLowerCase();
+      if (m.includes("invalid login")) return "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে।";
+      if (m.includes("email not confirmed")) return "আপনার ইমেইল এখনো নিশ্চিত করা হয়নি।";
+      if (m.includes("rate limit") || m.includes("too many")) return "অনেকবার চেষ্টা করা হয়েছে, একটু পরে আবার চেষ্টা করুন।";
+      if (m.includes("network") || m.includes("fetch")) return "ইন্টারনেট সংযোগে সমস্যা হচ্ছে।";
+      return "লগইন করা যায়নি: " + msg;
+    }
+
+    $("loginForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      $("loginError").classList.add("hidden");
+      const btn = $("loginSubmit");
+      btn.disabled = true;
+      const email = $("loginEmail").value.trim();
+      const password = $("loginPassword").value;
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      btn.disabled = false;
+      if (error) {
+        $("loginError").textContent = loginErrorBn(error.message);
+        $("loginError").classList.remove("hidden");
+        return;
+      }
+      $("loginPassword").value = "";
+      closeLogin();
+      showToast("লগইন সফল হয়েছে");
+      await initialize();
+    });
+
+    async function logout() {
+      await db.auth.signOut();
+      currentUser = null; profile = null; managers = [];
+      updateUI();
+      showToast("লগআউট হয়েছে");
+    }
+
+    db.auth.onAuthStateChange(event => {
+      if (event === "SIGNED_OUT") { currentUser = null; profile = null; managers = []; updateUI(); }
+    });
+
+    /* ===== ডেটা লোড ===== */
+    async function loadSession() {
+      const { data: sessionData } = await db.auth.getSession();
+      currentUser = sessionData?.session?.user || null;
+      if (!currentUser) { profile = null; return; }
+      const { data: p, error } = await db.from("profiles").select("id, full_name, role").eq("id", currentUser.id).single();
+      if (error) {
+        showToast("প্রোফাইল পাওয়া যায়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।", "error");
+        await db.auth.signOut();
+        currentUser = null; profile = null;
+        return;
+      }
+      profile = p;
+    }
+
+    async function loadSettings() {
+      const { data: s, error } = await db.from("mess_settings").select("id, current_manager_id, closed").eq("id", true).single();
+      if (error) { showToast("সেটিংস লোড করা যায়নি।", "error"); return; }
+      settings = s;
+    }
+
+    async function loadMonthStatus() {
+      const { data: rows, error } = await db.from("month_status").select("period_key, closed");
+      if (error) { monthStatusMissing = true; return; }
+      monthStatusMissing = false;
+      monthStatus = {};
+      (rows || []).forEach(r => { monthStatus[r.period_key] = !!r.closed; });
+    }
+
+    async function loadManagers() {
+      managers = [];
+      if (!currentUser) return;
+      try {
+        const { data: list } = await db.from("profiles").select("id, full_name, role").in("role", ["moderator", "admin"]);
+        managers = list || [];
+      } catch (e) {}
+    }
+
+    async function fetchAll(table, orders, filtered = true) {
+      const size = 1000;
+      let from = 0, all = [];
+      while (true) {
+        let q = db.from(table).select("*"); if (filtered) q = q.eq("period_key", PERIOD_KEY);
+        orders.forEach(([col, asc]) => { q = q.order(col, { ascending: asc }); });
+        const { data: rows, error } = await q.range(from, from + size - 1);
+        if (error) throw error;
+        all = all.concat(rows || []);
+        if (!rows || rows.length < size) break;
+        from += size;
+      }
+      return all;
+    }
+
+    async function loadData() {
+      try {
+        const [membersRaw, bazars, extras, deposits, mealsRaw] = await Promise.all([
+          fetchAll("members", [["created_at", true], ["id", true]], false),
+          fetchAll("bazars", [["date", false], ["id", true]]),
+          fetchAll("extra_expenses", [["date", false], ["id", true]]),
+          fetchAll("deposits", [["date", false], ["id", true]]),
+          fetchAll("meals", [["date", false], ["id", true]])
+        ]);
+        allMembersRaw = membersRaw;
+        // একই নামের সদস্য সব মাসে একজনই (সবচেয়ে পুরনো সারিটি মূল)
+        const canon = new Map();
+        idCanon = {};
+        membersRaw.forEach(m => {
+          const k = m.name.trim().toLowerCase();
+          if (!canon.has(k)) canon.set(k, m);
+          idCanon[m.id] = canon.get(k).id;
+        });
+        // দেখা মাস বা তার আগে যোগ হওয়া সদস্যরাই থাকবে
+        const members = [...canon.values()].filter(m => m.period_key <= PERIOD_KEY && !(m.left_from && PERIOD_KEY >= m.left_from));
+        const visibleIds = new Set(members.map(m => m.id));
+        const remap = r => ({ ...r, member_id: idCanon[r.member_id] || r.member_id });
+        data = { members, bazars, extras, deposits: deposits.map(remap).filter(r => visibleIds.has(r.member_id)), meals: mealsRaw.map(remap).filter(r => visibleIds.has(r.member_id)) };
+      } catch (e) {
+        showToast("ডেটা লোড করা যায়নি: " + (e.message || e), "error");
+      }
+    }
+
+    /* ===== ম্যানেজার ও মাস বন্ধ ===== */
+    const saveManager = lock(async () => {
+      if (!isAdmin()) return;
+      const id = $("managerSelect").value || null;
+      const { error } = await db.from("mess_settings").update({ current_manager_id: id, updated_at: new Date().toISOString() }).eq("id", true);
+      if (error) return showToast(error.message, "error");
+      await loadSettings();
+      updateUI();
+      showToast("ম্যানেজার আপডেট হয়েছে");
+    });
+
+    const toggleMonthClose = lock(async () => {
+      if (!isAdmin()) return;
+      if (monthStatusMissing) return showToast("month_status টেবিল নেই — আগে SQL চালান", "error");
+      const next = !isClosed();
+      if (!confirm(`আপনি কি নিশ্চিত যে ${MONTH_LABEL} মাসের হিসাব ${next ? "বন্ধ" : "আবার চালু"} করতে চান? অন্য মাসে কোনো প্রভাব পড়বে না।`)) return;
+      const { error } = await db.from("month_status").upsert({ period_key: PERIOD_KEY, closed: next, updated_at: new Date().toISOString() });
+      if (error) return showToast(error.message, "error");
+      await loadMonthStatus();
+      updateUI();
+      showToast(next ? "মাস বন্ধ করা হয়েছে" : "মাস আবার চালু হয়েছে");
+    });
+
+    /* ===== সদস্য ===== */
+    const addMember = lock(async () => {
+      if (!canEdit()) return;
+      const name = $("memberName").value.trim();
+      if (!name) return showToast("সদস্যের নাম লিখুন", "error");
+      const dup = allMembersRaw.find(m => m.name.trim().toLowerCase() === name.toLowerCase());
+      if (dup) return showToast(dup.left_from ? "এই নামে আগে একজন সদস্য ছিলেন; নতুন নামে (যেমন নামের সাথে ২) যোগ করুন" : "এই নামে সদস্য আগেই আছে", "error");
+      const { error } = await db.from("members").insert({ period_key: PERIOD_KEY, name });
+      if (error) return showToast(error.message, "error");
+      $("memberName").value = "";
+      await refreshData();
+      showToast("সদস্য যোগ হয়েছে");
+    });
+
+    const deleteMember = lock(async id => {
+      if (!canEdit()) return;
+      if (!confirm(`এই সদস্যকে ${MONTH_LABEL} থেকে সরানো হবে। আগের মাসের কোনো হিসাব বদলাবে না।`)) return;
+      const target = data.members.find(m => m.id === id);
+      const ids = allMembersRaw.filter(m => target && m.name.trim().toLowerCase() === target.name.trim().toLowerCase()).map(m => m.id);
+      const { error } = await db.from("members").update({ left_from: PERIOD_KEY }).in("id", ids.length ? ids : [id]);
+      if (error) return showToast(error.message, "error");
+      await refreshData();
+      showToast("সদস্যকে এই মাস থেকে সরানো হয়েছে");
+    });
+
+    /* ===== বাজার / জমা / অতিরিক্ত খরচ ===== */
+    const addBazar = lock(async () => {
+      if (!canEdit()) return;
+      const date = $("bazarDate").value;
+      const item = $("bazarItem").value.trim();
+      const category = $("bazarCategory").value;
+      const amount = Number($("bazarAmount").value);
+      if (!date || !item || !(amount > 0)) return showToast("সব তথ্য সঠিকভাবে পূরণ করুন", "error");
+      const { error } = await db.from("bazars").insert({ period_key: PERIOD_KEY, date, item, category, amount });
+      if (error) return showToast(error.message, "error");
+      $("bazarItem").value = ""; $("bazarAmount").value = "";
+      await refreshData();
+      showToast("বাজার যোগ হয়েছে");
+    });
+
+    const deleteBazar = lock(async id => {
+      if (!canEdit() || !confirm("এই এন্ট্রি মুছে ফেলবেন?")) return;
+      const { error } = await db.from("bazars").delete().eq("id", id);
+      if (error) return showToast(error.message, "error");
+      await refreshData();
+      showToast("মুছে ফেলা হয়েছে");
+    });
+
+    const addDeposit = lock(async () => {
+      if (!canEdit()) return;
+      const date = $("depositDate").value;
+      const member_id = $("depositMember").value;
+      const amount = Number($("depositAmount").value);
+      if (!date || !member_id || !(amount > 0)) return showToast("জমার সব তথ্য পূরণ করুন", "error");
+      const { error } = await db.from("deposits").insert({ period_key: PERIOD_KEY, date, member_id, amount });
+      if (error) return showToast(error.message, "error");
+      $("depositAmount").value = "";
+      await refreshData();
+      showToast("জমা যোগ হয়েছে");
+    });
+
+    const deleteDeposit = lock(async id => {
+      if (!canEdit() || !confirm("এই জমা মুছে ফেলবেন?")) return;
+      const { error } = await db.from("deposits").delete().eq("id", id);
+      if (error) return showToast(error.message, "error");
+      await refreshData();
+      showToast("মুছে ফেলা হয়েছে");
+    });
+
+    const addExtra = lock(async () => {
+      if (!canEdit()) return;
+      const date = $("extraDate").value;
+      const item = $("extraItem").value.trim();
+      const category = $("extraCategory").value;
+      const amount = Number($("extraAmount").value);
+      if (!date || !item || !(amount > 0)) return showToast("খরচের সব তথ্য পূরণ করুন", "error");
+      const { error } = await db.from("extra_expenses").insert({ period_key: PERIOD_KEY, date, item, category, amount });
+      if (error) return showToast(error.message, "error");
+      $("extraItem").value = ""; $("extraAmount").value = "";
+      await refreshData();
+      showToast("খরচ যোগ হয়েছে");
+    });
+
+    const deleteExtra = lock(async id => {
+      if (!canEdit() || !confirm("এই খরচ মুছে ফেলবেন?")) return;
+      const { error } = await db.from("extra_expenses").delete().eq("id", id);
+      if (error) return showToast(error.message, "error");
+      await refreshData();
+      showToast("মুছে ফেলা হয়েছে");
+    });
+
+    /* ===== মিল ===== */
+    const defaultMealMapping = {
+      "Saikat": 3, "Riad": 2, "Rabbi": 3, "Mahin": 3, "Asif": 3, "Shakil": 2,
+      "Siyam": 3, "Musfiq": 3, "Nadim": 3, "Sagor": 3, "Mijan": 3, "Ridoy": 3,
+      "Shorif": 3, "Ekram": 3, "Shakib": 3, "Faysal": 3, "Maruf": 3, "Kousik": 3,
+      "Eyasin": 3, "Ruhul": 2, "Ajij": 3, "Abir": 2, "Shohag": 3, "Meheraf": 3,
+      "Sajib": 3, "Arif": 3
+    };
+    const defaultOwn = m => defaultMealMapping[m.name] !== undefined ? defaultMealMapping[m.name] : 3;
+
+    function renderMealInputs() {
+      const container = $("mealInputs");
+      mealDirty = false;
+      if (!data.members.length) {
+        container.innerHTML = `<div class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">আগে সদস্য যোগ করুন।</div>`;
+        return;
+      }
+      const date = $("mealDate").value;
+      const existing = new Map(data.meals.filter(m => m.date === date).map(m => [m.member_id, m]));
+
+      container.innerHTML = data.members.map(m => {
+        const row = existing.get(m.id);
+        return `
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 card-animate">
+            <p class="mb-3 font-bold">${escapeHTML(m.name)}</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="mb-1 block text-xs text-slate-500">নিজের মিল</label>
+                <input data-own="${escapeHTML(m.id)}" type="number" inputmode="numeric" min="0" step="1" value="${row ? Number(row.own_meal) : defaultOwn(m)}" class="num-in w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-slate-500">গেস্ট</label>
+                <input data-guest="${escapeHTML(m.id)}" type="number" inputmode="numeric" min="0" step="1" value="${row ? Number(row.guest_meal) : 0}" class="num-in w-full rounded-xl border border-slate-300 bg-white px-3 py-2">
+              </div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    function fillMeals(mode) {
+      data.members.forEach(m => {
+        const o = document.querySelector(`[data-own="${m.id}"]`);
+        const g = document.querySelector(`[data-guest="${m.id}"]`);
+        if (o) o.value = mode === "zero" ? 0 : defaultOwn(m);
+        if (g) g.value = 0;
+      });
+      mealDirty = true;
+    }
+
+    document.addEventListener("input", e => {
+      if (e.target && e.target.matches && e.target.matches("[data-own],[data-guest]")) mealDirty = true;
+    });
+    document.addEventListener("focusin", e => {
+      if (e.target && e.target.matches && e.target.matches(".num-in")) setTimeout(() => e.target.select && e.target.select(), 0);
+    });
+
+    const addMeal = lock(async () => {
+      if (!canEdit()) return;
+      const date = $("mealDate").value;
+      if (!date) return showToast("তারিখ নির্বাচন করুন", "error");
+      if (!data.members.length) return showToast("আগে সদস্য যোগ করুন", "error");
+
+      const toInsert = [];
+      const updates = [];
+      data.members.forEach(m => {
+        const own = Math.max(0, Math.floor(Number(document.querySelector(`[data-own="${m.id}"]`)?.value || 0)));
+        const guest = Math.max(0, Math.floor(Number(document.querySelector(`[data-guest="${m.id}"]`)?.value || 0)));
+        const ex = data.meals.find(x => x.date === date && x.member_id === m.id);
+        if (ex) {
+          if (Number(ex.own_meal) !== own || Number(ex.guest_meal) !== guest) {
+            updates.push(db.from("meals").update({ own_meal: own, guest_meal: guest }).eq("id", ex.id));
+          }
+        } else {
+          toInsert.push({ period_key: PERIOD_KEY, date, member_id: m.id, own_meal: own, guest_meal: guest });
+        }
+      });
+
+      const results = await Promise.all(updates);
+      const failed = results.find(r => r.error);
+      if (failed) return showToast(failed.error.message, "error");
+      if (toInsert.length) {
+        const { error } = await db.from("meals").insert(toInsert);
+        if (error) return showToast(error.message, "error");
+      }
+      mealDirty = false;
+      await refreshData();
+      showToast("দৈনিক মিল সংরক্ষিত হয়েছে");
+    });
+
+    const deleteMealDay = lock(async () => {
+      if (!canEdit()) return;
+      const date = $("mealDate").value;
+      if (!data.meals.some(m => m.date === date)) return showToast("এই তারিখে কোনো এন্ট্রি নেই", "error");
+      if (!confirm(`${fmtDate(date)} তারিখের সব মিল এন্ট্রি মুছে ফেলবেন?`)) return;
+      const { error } = await db.from("meals").delete().eq("period_key", PERIOD_KEY).eq("date", date);
+      if (error) return showToast(error.message, "error");
+      mealDirty = false;
+      await refreshData();
+      renderMealInputs();
+      showToast("মুছে ফেলা হয়েছে");
+    });
+
+    function memberName(id) { return data.members.find(m => m.id === id)?.name || "অজানা"; }
+
+    /* ===== হিসাব ===== */
+    function calculate() {
+      const ownByMember = {}, guestByMember = {}, depositByMember = {};
+      data.members.forEach(m => { ownByMember[m.id] = 0; guestByMember[m.id] = 0; depositByMember[m.id] = 0; });
+
+      data.meals.forEach(m => {
+        if (ownByMember[m.member_id] !== undefined) {
+          ownByMember[m.member_id] += Number(m.own_meal || 0);
+          guestByMember[m.member_id] += Number(m.guest_meal || 0);
+        }
+      });
+
+      data.deposits.forEach(d => {
+        if (depositByMember[d.member_id] !== undefined) depositByMember[d.member_id] += Number(d.amount || 0);
+      });
+
+      const sumBy = (arr, cat) => arr.filter(x => x.category === cat).reduce((s, x) => s + Number(x.amount || 0), 0);
+      const totalFoodCost = sumBy(data.bazars, "food") + sumBy(data.extras, "food");
+      const totalNonFoodCost = sumBy(data.bazars, "non-food") + sumBy(data.extras, "non-food");
+
+      const totalBillableMeals = data.members.reduce((sum, m) => sum + Math.max(ownByMember[m.id] || 0, MIN_MEALS) + (guestByMember[m.id] || 0), 0);
+      const totalBoarder = data.members.length;
+      const mealRate = totalBillableMeals ? totalFoodCost / totalBillableMeals : 0;
+      const extraRate = totalBoarder ? totalNonFoodCost / totalBoarder : 0;
+
+      const rows = data.members.map(m => {
+        const own = ownByMember[m.id] || 0;
+        const guest = guestByMember[m.id] || 0;
+        const billable = Math.max(own, MIN_MEALS) + guest;
+        const mealCost = billable * mealRate;
+        const finalBill = mealCost + extraRate;
+        const deposit = depositByMember[m.id] || 0;
+        const balance = deposit - finalBill;
+        return { member: m, own, guest, billable, mealCost, extraRate, finalBill, deposit, balance };
+      });
+
+      return { totalFoodCost, totalNonFoodCost, totalBillableMeals, totalBoarder, mealRate, extraRate, rows };
+    }
+
+    /* ===== রেন্ডার ===== */
+    function getMe() { return data.members.find(m => m.name === myName) || null; }
+
+    function setMyMember(id) {
+      const m = data.members.find(x => String(x.id) === String(id));
+      myName = m ? m.name : "";
+      try { localStorage.setItem(MY_NAME_KEY, myName); } catch (e) {}
+      summaryFilter = m ? m.id : "";
+      syncSelects();
+      renderSummary();
+      updateHero();
+    }
+
+    function onViewerSelect(id) {
+      summaryFilter = id || "";
+      if (id) {
+        const m = data.members.find(x => String(x.id) === String(id));
+        if (m) { myName = m.name; try { localStorage.setItem(MY_NAME_KEY, myName); } catch (e) {} }
+      }
+      syncSelects();
+      renderSummary();
+      updateHero();
+    }
+
+    function syncSelects() {
+      const me = getMe();
+      $("heroMemberSelect").value = me ? me.id : "";
+      $("viewerMemberSelect").value = summaryFilter || "";
+    }
+
+    function renderMembers() {
+      $("memberCount").textContent = `${bnNum(data.members.length)} জন`;
+      if (data.members.length) {
+        $("memberList").innerHTML = data.members.map(m => `
+          <div class="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 card-animate">
+            <span class="font-semibold">${escapeHTML(m.name)}</span>
+            ${canEdit() ? `<button onclick="deleteMember('${escapeHTML(m.id)}')" class="text-red-500 hover:text-red-700" aria-label="মুছুন"><i class="fa-solid fa-trash"></i></button>` : ""}
+          </div>`).join("");
+      } else {
+        $("memberList").innerHTML = `
+          <div class="sm:col-span-2 lg:col-span-3 rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-500">
+            এখনো কোনো সদস্য যোগ করা হয়নি।
+
+          </div>`;
+      }
+
+      const opts = data.members.map(m => `<option value="${escapeHTML(m.id)}">${escapeHTML(m.name)}</option>`).join("");
+      const depVal = $("depositMember").value;
+      $("depositMember").innerHTML = `<option value="">সদস্য নির্বাচন করুন</option>` + opts;
+      $("depositMember").value = depVal;
+      $("heroMemberSelect").innerHTML = `<option value="">নিজের নাম নির্বাচন করুন</option>` + opts;
+      $("viewerMemberSelect").innerHTML = `<option value="">সব সদস্য</option>` + opts;
+
+      if (summaryFilter && !data.members.some(m => m.id === summaryFilter)) summaryFilter = "";
+      if (!summaryFilter) { const me = getMe(); if (me) summaryFilter = me.id; }
+      syncSelects();
+    }
+
+    function renderBazar() {
+      $("bazarCount").textContent = `${bnNum(data.bazars.length)}টি এন্ট্রি`;
+      $("bazarTable").innerHTML = data.bazars.length
+        ? data.bazars.map(x => `
+          <tr class="border-b last:border-0">
+            <td class="p-3">${escapeHTML(fmtDate(x.date))}</td>
+            <td class="p-3 font-medium">${escapeHTML(x.item)}</td>
+            <td class="p-3">${catBadge(x.category)}</td>
+            <td class="p-3 font-semibold">${money(x.amount)}</td>
+            <td class="p-3">${canEdit() ? `<button onclick="deleteBazar('${escapeHTML(x.id)}')" class="text-red-500 hover:text-red-700" aria-label="মুছুন"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
+          </tr>`).join("")
+        : `<tr><td colspan="5" class="p-5 text-center text-slate-500">কোনো এন্ট্রি নেই।</td></tr>`;
+      const total = data.bazars.reduce((s, x) => s + Number(x.amount || 0), 0);
+      $("bazarFoot").innerHTML = data.bazars.length ? `<tr><td class="p-3" colspan="3">মোট</td><td class="p-3" colspan="2">${money(total)}</td></tr>` : "";
+      $("bazarCards").innerHTML = cardList(data.bazars, x => ({
+        title: x.item, sub: fmtDate(x.date), badge: catBadge(x.category), amount: x.amount, del: `deleteBazar('${escapeHTML(x.id)}')`
+      }), "কোনো এন্ট্রি নেই।", "মোট", total);
+    }
+
+    function renderDeposits() {
+      $("depositTable").innerHTML = data.deposits.length
+        ? data.deposits.map(x => `
+          <tr class="border-b last:border-0">
+            <td class="p-3">${escapeHTML(fmtDate(x.date))}</td>
+            <td class="p-3 font-medium">${escapeHTML(memberName(x.member_id))}</td>
+            <td class="p-3 font-semibold">${money(x.amount)}</td>
+            <td class="p-3">${canEdit() ? `<button onclick="deleteDeposit('${escapeHTML(x.id)}')" class="text-red-500 hover:text-red-700" aria-label="মুছুন"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
+          </tr>`).join("")
+        : `<tr><td colspan="4" class="p-5 text-center text-slate-500">কোনো জমা নেই।</td></tr>`;
+      const total = data.deposits.reduce((s, x) => s + Number(x.amount || 0), 0);
+      $("depositFoot").innerHTML = data.deposits.length ? `<tr><td class="p-3" colspan="2">মোট জমা</td><td class="p-3" colspan="2">${money(total)}</td></tr>` : "";
+      $("depositCards").innerHTML = cardList(data.deposits, x => ({
+        title: memberName(x.member_id), sub: fmtDate(x.date), badge: "", amount: x.amount, del: `deleteDeposit('${escapeHTML(x.id)}')`
+      }), "কোনো জমা নেই।", "মোট জমা", total);
+    }
+
+    function renderExtras() {
+      $("extraTable").innerHTML = data.extras.length
+        ? data.extras.map(x => `
+          <tr class="border-b last:border-0">
+            <td class="p-3">${escapeHTML(fmtDate(x.date))}</td>
+            <td class="p-3 font-medium">${escapeHTML(x.item)}</td>
+            <td class="p-3">${catBadge(x.category)}</td>
+            <td class="p-3 font-semibold">${money(x.amount)}</td>
+            <td class="p-3">${canEdit() ? `<button onclick="deleteExtra('${escapeHTML(x.id)}')" class="text-red-500 hover:text-red-700" aria-label="মুছুন"><i class="fa-solid fa-trash"></i></button>` : "—"}</td>
+          </tr>`).join("")
+        : `<tr><td colspan="5" class="p-5 text-center text-slate-500">কোনো অতিরিক্ত খরচ নেই।</td></tr>`;
+      const total = data.extras.reduce((s, x) => s + Number(x.amount || 0), 0);
+      $("extraFoot").innerHTML = data.extras.length ? `<tr><td class="p-3" colspan="3">মোট</td><td class="p-3" colspan="2">${money(total)}</td></tr>` : "";
+      $("extraCards").innerHTML = cardList(data.extras, x => ({
+        title: x.item, sub: fmtDate(x.date), badge: catBadge(x.category), amount: x.amount, del: `deleteExtra('${escapeHTML(x.id)}')`
+      }), "কোনো অতিরিক্ত খরচ নেই।", "মোট", total);
+    }
+
+    // মোবাইলের জন্য কার্ড লিস্ট (টেবিলের বদলে)
+    function cardList(items, map, emptyText, totalLabel, total) {
+      if (!items.length) return `<div class="rounded-xl bg-slate-50 p-5 text-center text-sm text-slate-500">${emptyText}</div>`;
+      const cards = items.map(x => {
+        const c = map(x);
+        return `
+          <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+            <div class="min-w-0 flex-1">
+              <p class="truncate font-bold text-slate-800">${escapeHTML(c.title)}</p>
+              <p class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500"><span>${escapeHTML(c.sub)}</span>${c.badge}</p>
+            </div>
+            <div class="shrink-0 text-right">
+              <p class="font-bold text-slate-900">${money(c.amount)}</p>
+              ${canEdit() ? `<button onclick="${c.del}" class="mt-1 text-sm text-red-500 hover:text-red-700" aria-label="মুছুন"><i class="fa-solid fa-trash"></i></button>` : ""}
+            </div>
+          </div>`;
+      }).join("");
+      return cards + `<div class="flex justify-between rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white"><span>${totalLabel}</span><span>${money(total)}</span></div>`;
+    }
+
+    function selectMealDate(ds) {
+      if (!ds) return;
+      if (mealDirty && ds !== selectedMealDate && !confirm("এই তারিখের সংরক্ষণ না করা পরিবর্তন হারিয়ে যাবে। তবুও তারিখ বদলাবেন?")) {
+        $("mealDate").value = selectedMealDate;
+        return;
+      }
+      selectedMealDate = ds;
+      const inp = $("mealDate");
+      if (inp && inp.value !== ds) inp.value = ds;
+      renderMealInputs();
+      renderMeals();
+      const dd = $("mealDayDetail");
+      dd.classList.remove("detail-in"); void dd.offsetWidth; dd.classList.add("detail-in");
+    }
+
+    function renderMeals() {
+      const cal = $("mealCalendar");
+      const detail = $("mealDayDetail");
+      if (!cal || !detail) return;
+
+      if (!selectedMealDate) selectedMealDate = $("mealDate")?.value || `${PERIOD_KEY}-01`;
+      $("calMonthLabel").textContent = MONTH_LABEL;
+      $("mealMonthBadge").textContent = MONTH_LABEL;
+
+      const daysInMonth = new Date(YEAR, MONTH, 0).getDate();
+      const startDow = new Date(YEAR, MONTH - 1, 1).getDay();
+      const today = todayString();
+
+      const byDate = {};
+      data.meals.forEach(r => { (byDate[r.date] = byDate[r.date] || []).push(r); });
+      const dayTotal = rows => rows.reduce((s, r) => s + Number(r.own_meal || 0) + Number(r.guest_meal || 0), 0);
+      const maxTotal = Math.max(1, ...Object.values(byDate).map(dayTotal));
+
+      let cells = "";
+      for (let i = 0; i < startDow; i++) cells += `<span></span>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${PERIOD_KEY}-${pad(d)}`;
+        const rows = byDate[ds] || [];
+        const isSel = ds === selectedMealDate;
+        const future = ds > today;
+        const lvl = rows.length ? (dayTotal(rows) / maxTotal).toFixed(2) : 0;
+        cells += `
+          <button type="button" ${future ? "disabled" : ""} style="--lvl:${lvl}" class="cal-day ${rows.length ? "has-data" : ""} ${isSel ? "is-selected" : ""} ${ds === today ? "is-today" : ""}" onclick="selectMealDate('${ds}')">
+            <span class="font-bold">${bnNum(d)}</span>
+            <span class="text-[11px]">${rows.length ? bnNum(dayTotal(rows)) : "-"}</span>
+          </button>`;
+      }
+      cal.innerHTML = cells;
+
+      const dayRows = (byDate[selectedMealDate] || []).slice().sort((a, b) => memberName(a.member_id).localeCompare(memberName(b.member_id), "bn"));
+      const ownSum = dayRows.reduce((s, r) => s + Number(r.own_meal || 0), 0);
+      const guestSum = dayRows.reduce((s, r) => s + Number(r.guest_meal || 0), 0);
+      detail.innerHTML = `
+        <h3 class="font-bold mb-1">${escapeHTML(fmtDate(selectedMealDate, true))}</h3>
+        ${dayRows.length ? `<p class="mb-2 text-xs text-slate-500">মোট মিল: <b>${bnNum(ownSum + guestSum)}</b> (নিজের ${bnNum(ownSum)}, গেস্ট ${bnNum(guestSum)}) • ${bnNum(dayRows.length)} জন</p>` : ""}
+        ${dayRows.length ? dayRows.map(r => `
+          <div class="flex justify-between border-b py-1.5 text-sm last:border-0">
+            <span class="font-medium">${escapeHTML(memberName(r.member_id))}</span>
+            <span class="text-slate-600">নিজের: <b>${bnNum(r.own_meal)}</b>, গেস্ট: <b>${bnNum(r.guest_meal)}</b></span>
+          </div>`).join("") : '<p class="text-sm text-slate-400">এই তারিখে কোনো তথ্য নেই।</p>'}`;
+    }
+
+    function renderSummary() {
+      const c = calc || calculate();
+      const rows = summaryFilter ? c.rows.filter(r => String(r.member.id) === String(summaryFilter)) : c.rows;
+
+      const hint = $("viewerBillHint");
+      if (!data.members.length) {
+        hint.innerHTML = `<i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> এখনো কোনো সদস্য যোগ করা হয়নি।`;
+      } else if (summaryFilter && rows[0]) {
+        const r = rows[0];
+        hint.innerHTML = r.balance >= 0
+          ? `<i class="fa-solid fa-circle-check mr-1 text-emerald-500"></i> <b>${escapeHTML(r.member.name)}</b>, আপনার বাড়তি জমা আছে <b class="text-emerald-600">${money(r.balance)}</b>।`
+          : `<i class="fa-solid fa-triangle-exclamation mr-1 text-red-500"></i> <b>${escapeHTML(r.member.name)}</b>, আপনার বাকি আছে <b class="text-red-600">${money(-r.balance)}</b>।`;
+      } else {
+        hint.innerHTML = `<i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> নিজের হিসাব দেখতে তালিকা থেকে নিজের নাম নির্বাচন করুন।`;
+      }
+
+      const star = r => r.own < MIN_MEALS ? "*" : "";
+      $("summaryTable").innerHTML = rows.length ? rows.map(r => `
+        <tr class="border-b last:border-0">
+          <td class="p-3 font-bold">${escapeHTML(r.member.name)}</td>
+          <td class="p-3">${bnNum(r.own)}</td>
+          <td class="p-3">${bnNum(r.guest)}</td>
+          <td class="p-3 font-bold">${bnNum(r.billable)}${star(r)}</td>
+          <td class="p-3">${money(r.mealCost)}</td>
+          <td class="p-3">${money(r.extraRate)}</td>
+          <td class="p-3 font-bold">${money(r.finalBill)}</td>
+          <td class="p-3">${money(r.deposit)}</td>
+          <td class="p-3 font-bold ${r.balance >= 0 ? "text-emerald-600" : "text-red-600"}">${money(r.balance)}</td>
+        </tr>`).join("") : `<tr><td colspan="9" class="p-5 text-center text-slate-500">কোনো তথ্য নেই।</td></tr>`;
+
+      if (!summaryFilter && rows.length) {
+        const sum = k => rows.reduce((s, r) => s + r[k], 0);
+        $("summaryFoot").innerHTML = `<tr>
+          <td class="p-3">মোট</td><td class="p-3">${bnNum(sum("own"))}</td><td class="p-3">${bnNum(sum("guest"))}</td><td class="p-3">${bnNum(sum("billable"))}</td>
+          <td class="p-3">${money(sum("mealCost"))}</td><td class="p-3">${money(sum("extraRate"))}</td><td class="p-3">${money(sum("finalBill"))}</td>
+          <td class="p-3">${money(sum("deposit"))}</td><td class="p-3">${money(sum("balance"))}</td></tr>`;
+      } else {
+        $("summaryFoot").innerHTML = "";
+      }
+
+      $("summaryCards").innerHTML = rows.map(r => `
+        <div class="rounded-2xl border border-slate-200 p-4 bg-white shadow-sm">
+          <h3 class="font-bold border-b pb-2 mb-2 text-indigo-900">${escapeHTML(r.member.name)}</h3>
+          <div class="text-sm space-y-1">
+            <p class="flex justify-between"><span>নিজের মিল:</span> <b>${bnNum(r.own)}</b></p>
+            <p class="flex justify-between"><span>গেস্ট মিল:</span> <b>${bnNum(r.guest)}</b></p>
+            <p class="flex justify-between"><span>বিলযোগ্য মিল:</span> <b>${bnNum(r.billable)}${star(r)}</b></p>
+            <p class="flex justify-between"><span>মিল খরচ:</span> <b>${money(r.mealCost)}</b></p>
+            <p class="flex justify-between"><span>অতিরিক্ত খরচ:</span> <b>${money(r.extraRate)}</b></p>
+            <p class="flex justify-between pt-1 border-t"><span>চূড়ান্ত বিল:</span> <b class="text-indigo-600">${money(r.finalBill)}</b></p>
+            <p class="flex justify-between"><span>জমা:</span> <b>${money(r.deposit)}</b></p>
+            <p class="flex justify-between pt-2 border-t"><span>ব্যালেন্স:</span> <b class="${r.balance >= 0 ? "text-emerald-600" : "text-red-600"}">${money(r.balance)}</b></p>
+          </div>
+        </div>`).join("");
+    }
+
+    function updateDashboard() {
+      const c = calc;
+      countTo($("totalBoarder"), c.totalBoarder, bnNum);
+      countTo($("totalMeals"), c.totalBillableMeals, bnNum);
+      countTo($("totalFoodCost"), c.totalFoodCost, money);
+      countTo($("mealRate"), c.mealRate, money);
+      countTo($("totalNonFoodCost"), c.totalNonFoodCost, money);
+      countTo($("extraRate"), c.extraRate, money);
+
+      const totalExpense = c.totalFoodCost + c.totalNonFoodCost;
+      const totalDeposit = data.deposits.reduce((s, x) => s + Number(x.amount || 0), 0);
+      countTo($("totalExpense"), totalExpense, money);
+      countTo($("totalDeposit"), totalDeposit, money);
+      countTo($("remainingMoney"), totalDeposit - totalExpense, money);
+    }
+
+    // সংখ্যা ০ থেকে ধীরে ধীরে বাড়ার এনিমেশন
+    function countTo(el, to, fmt) {
+      if (!el) return;
+      to = Number(to || 0);
+      const from = el._v ?? 0;
+      el._v = to;
+      cancelAnimationFrame(el._raf);
+      if (from === to || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = fmt(to); return; }
+      const dur = 750, t0 = performance.now();
+      const step = t => {
+        const p = Math.min(1, (t - t0) / dur);
+        const e = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(from + (to - from) * e);
+        if (p < 1) el._raf = requestAnimationFrame(step); else el.textContent = fmt(to);
+      };
+      el._raf = requestAnimationFrame(step);
+    }
+
+    // প্যানেল খোলার সময় আইটেমগুলো একটা একটা করে আসার এনিমেশন
+    function playEnter(panel) {
+      if (!panel) return;
+      const items = panel.querySelectorAll(
+        ".home-hero, .quick, .stat-card, #accountStatusPanel, #managerPanel, .bg-slate-900, tbody tr, #bazarCards > div, #depositCards > div, #extraCards > div, #memberList > div, .cal-card, .day-card, .cal-day, #mealInputs > div, #summaryCards > div, #mealFormArea, #bazarFormArea, #depositFormArea, #extraFormArea, #memberFormArea"
+      );
+      let n = 0;
+      items.forEach(el => {
+        if (el.offsetParent === null) return;
+        el.style.setProperty("--n", Math.min(n++, 16));
+        el.classList.remove("enter-item");
+        void el.offsetWidth;
+        el.classList.add("enter-item");
+      });
+      clearTimeout(panel._enterT);
+      panel._enterT = setTimeout(() => items.forEach(el => el.classList.remove("enter-item")), 1500);
+    }
+
+    function greeting() {
+      const h = new Date().getHours();
+      if (h < 5) return "শুভ রাত্রি";
+      if (h < 12) return "শুভ সকাল";
+      if (h < 15) return "শুভ দুপুর";
+      if (h < 18) return "শুভ বিকেল";
+      if (h < 20) return "শুভ সন্ধ্যা";
+      return "শুভ রাত্রি";
+    }
+
+    function updateHero() {
+      const me = getMe();
+      $("heroGreet").textContent = me ? `${greeting()}, ${me.name}` : greeting();
+      $("heroDate").textContent = new Date().toLocaleDateString("bn-BD", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const row = me && calc ? calc.rows.find(r => r.member.id === me.id) : null;
+      $("heroTrio").hidden = !row;
+      $("heroHint").hidden = !!row;
+      if (row) {
+        countTo($("heroBill"), row.finalBill, money);
+        countTo($("heroDep"), row.deposit, money);
+        $("heroBalLbl").textContent = row.balance >= 0 ? "বাড়তি জমা" : "বাকি আছে";
+        countTo($("heroBal"), Math.abs(row.balance), money);
+      }
+    }
+
+    function updateAccountUI() {
+      const closed = isClosed();
+      // হিসাবের অবস্থা কার্ড শুধু অ্যাডমিন লগইন থাকলে দেখাবে
+      $("accountStatusPanel").classList.toggle("hidden", !isAdmin());
+      $("monthStatusDot").className = `h-3 w-3 rounded-full ${closed ? "bg-red-500" : "bg-emerald-500 pulse-dot"}`;
+      $("monthStatusText").textContent = closed ? "বন্ধ করা হয়েছে" : "চলমান (খোলা)";
+      $("adminControls").classList.toggle("hidden", !isAdmin());
+      $("closeMonthBtn").innerHTML = closed
+        ? `<i class="fa-solid fa-lock-open mr-1"></i> মাস আবার চালু করুন`
+        : `<i class="fa-solid fa-lock mr-1"></i> মাস বন্ধ করুন`;
+
+      const notice = $("viewerNotice");
+      let text, cls, icon;
+      if (!currentUser && PERIOD_KEY !== REAL_KEY) {
+        text = `আপনি ${MONTH_LABEL} মাসের পুরনো হিসাব দেখছেন।`; cls = "bg-blue-50 text-blue-700"; icon = "fa-clock-rotate-left";
+      } else if (!currentUser) {
+        text = "আপনি বর্তমান মেসের হিসাব দেখছেন। শুধু অ্যাডমিন/মডারেটরের কাজের জন্য লগইন প্রয়োজন।"; cls = "bg-blue-50 text-blue-700"; icon = "fa-eye";
+      } else if (closed) {
+        text = `${MONTH_LABEL} মাসের হিসাব বন্ধ, তাই পরিবর্তন করা যাবে না (শুধু দেখা যাবে)।`; cls = "bg-amber-50 text-amber-700"; icon = "fa-lock";
+      } else if (!isAssignedManager()) {
+        text = "আপনি মডারেটর, কিন্তু বর্তমান ম্যানেজার নন — তাই শুধু দেখতে পারবেন।"; cls = "bg-blue-50 text-blue-700"; icon = "fa-eye";
+      } else {
+        text = "আপনি ম্যানেজার হিসেবে হিসাব এডিট করতে পারবেন।"; cls = "bg-emerald-50 text-emerald-700"; icon = "fa-pen";
+      }
+      notice.className = `mt-3 rounded-xl p-3 text-sm ${cls}`;
+      notice.innerHTML = `<i class="fa-solid ${icon} mr-1"></i> ${text}`;
+
+      const badge = $("roleBadge");
+      if (currentUser && profile) {
+        const label = isAdmin() ? "অ্যাডমিন" : (isAssignedManager() ? "ম্যানেজার" : "মডারেটর");
+        badge.textContent = label;
+        badge.className = `rounded-full px-3 py-1 text-xs font-bold ${isAdmin() ? "bg-amber-300 text-amber-900" : (isAssignedManager() ? "bg-emerald-300 text-emerald-900" : "bg-sky-200 text-sky-900")}`;
+      } else {
+        badge.className = "hidden";
+      }
+
+      $("managerPanel").classList.toggle("hidden", !currentUser);
+      if (currentUser && profile) {
+        $("loggedUserText").textContent = profile.full_name || currentUser.email || "";
+        const mgrId = settings?.current_manager_id;
+        let mgrName = "নির্ধারিত নেই";
+        if (mgrId) {
+          mgrName = mgrId === currentUser.id ? (profile.full_name || "আপনি")
+            : (managers.find(m => m.id === mgrId)?.full_name || "অন্য একজন মডারেটর");
+        }
+        $("managerText").textContent = `বর্তমান ম্যানেজার: ${mgrName}`;
+        $("adminManagerBox").classList.toggle("hidden", !isAdmin());
+        if (isAdmin()) {
+          const sel = $("managerSelect");
+          sel.innerHTML = `<option value="">— কেউ নেই —</option>` + managers.map(m =>
+            `<option value="${escapeHTML(m.id)}">${escapeHTML(m.full_name || "নামহীন")} (${m.role === "admin" ? "অ্যাডমিন" : "মডারেটর"})</option>`).join("");
+          sel.value = mgrId || "";
+        }
+      }
+    }
+
+    function updateFab() {
+      $("mealFab").classList.toggle("show", currentPanel === "mealsPanel" && canEdit());
+    }
+
+    function monthList() {
+      let min = REAL_KEY;
+      allMembersRaw.forEach(m => { if (m.period_key && m.period_key < min) min = m.period_key; });
+      Object.keys(monthStatus).forEach(k => { if (k < min) min = k; });
+      const out = [];
+      let [y, m] = min.split("-").map(Number);
+      while (`${y}-${pad(m)}` <= REAL_KEY) { out.push(`${y}-${pad(m)}`); m++; if (m > 12) { m = 1; y++; } }
+      return out.reverse();
+    }
+
+    function renderMonthSelect() {
+      const sel = $("monthSelect");
+      sel.innerHTML = monthList().map(k => `<option value="${k}">${monthLabelOf(k)}${k === REAL_KEY ? " (চলতি)" : ""}${monthStatus[k] ? " 🔒" : ""}</option>`).join("");
+      sel.value = PERIOD_KEY;
+    }
+
+    async function setPeriod(key) {
+      if (!key || key === PERIOD_KEY) return;
+      if (mealDirty && !confirm("সংরক্ষণ না করা মিলের পরিবর্তন হারিয়ে যাবে। তবুও মাস বদলাবেন?")) { $("monthSelect").value = PERIOD_KEY; return; }
+      PERIOD_KEY = key;
+      [YEAR, MONTH] = key.split("-").map(Number);
+      MONTH_LABEL = monthLabelOf(key);
+      mealDirty = false;
+      await loadData();
+      setupDateInputs();
+      selectedMealDate = $("mealDate").value;
+      updateUI();
+    }
+    $("monthSelect").addEventListener("change", e => setPeriod(e.target.value));
+
+    function updateUI() {
+      calc = calculate();
+      $("currentMonthLabel").textContent = MONTH_LABEL;
+      $("loginBtn").classList.toggle("hidden", !!currentUser);
+      $("logoutBtn").classList.toggle("hidden", !currentUser);
+
+      const editable = canEdit();
+      ["memberFormArea", "bazarFormArea", "depositFormArea", "extraFormArea", "mealFormArea"].forEach(id => $(id).classList.toggle("hidden", !editable));
+
+      renderMonthSelect();
+      updateAccountUI();
+      renderMembers();
+      renderBazar();
+      renderDeposits();
+      renderExtras();
+      renderMeals();
+      renderSummary();
+      updateDashboard();
+      updateHero();
+      if (!mealDirty) renderMealInputs();
+      updateFab();
+    }
+
+    async function refreshData() {
+      await loadData();
+      updateUI();
+    }
+
+    /* ===== এক্সেল রিপোর্ট ===== */
+    function downloadExcelReport() {
+      const c = calculate();
+      const summary = c.rows.map(r => ({
+        "সদস্য": r.member.name,
+        "নিজের মিল": r.own,
+        "গেস্ট মিল": r.guest,
+        "বিলযোগ্য মিল": r.billable,
+        "মিল খরচ": Number(r.mealCost.toFixed(2)),
+        "অতিরিক্ত খরচ": Number(r.extraRate.toFixed(2)),
+        "চূড়ান্ত বিল": Number(r.finalBill.toFixed(2)),
+        "জমা": Number(r.deposit.toFixed(2)),
+        "ব্যালেন্স": Number(r.balance.toFixed(2))
+      }));
+      const sum = k => Number(c.rows.reduce((s, r) => s + r[k], 0).toFixed(2));
+      summary.push({
+        "সদস্য": "মোট", "নিজের মিল": sum("own"), "গেস্ট মিল": sum("guest"), "বিলযোগ্য মিল": sum("billable"),
+        "মিল খরচ": sum("mealCost"), "অতিরিক্ত খরচ": sum("extraRate"), "চূড়ান্ত বিল": sum("finalBill"),
+        "জমা": sum("deposit"), "ব্যালেন্স": sum("balance")
+      });
+
+      const bazar = data.bazars.map(x => ({ "তারিখ": x.date, "পণ্য": x.item, "ধরন": catLabel(x.category), "টাকা": Number(x.amount) }));
+      const extra = data.extras.map(x => ({ "তারিখ": x.date, "বিবরণ": x.item, "ধরন": catLabel(x.category), "টাকা": Number(x.amount) }));
+      const dep = data.deposits.map(x => ({ "তারিখ": x.date, "সদস্য": memberName(x.member_id), "টাকা": Number(x.amount) }));
+      const meals = data.meals.slice().sort((a, b) => a.date.localeCompare(b.date)).map(x => ({
+        "তারিখ": x.date, "সদস্য": memberName(x.member_id), "নিজের মিল": Number(x.own_meal), "গেস্ট মিল": Number(x.guest_meal)
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const add = (rows, name) => {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        if (rows.length) ws["!cols"] = Object.keys(rows[0]).map(k => ({ wch: Math.max(12, k.length + 4) }));
+        XLSX.utils.book_append_sheet(wb, ws, name);
+      };
+      add(summary, "সারসংক্ষেপ");
+      add(bazar, "বড় বাজার");
+      add(extra, "অতিরিক্ত খরচ");
+      add(dep, "জমা");
+      add(meals, "দৈনিক মিল");
+      XLSX.writeFile(wb, `nazmahal-hisab-${PERIOD_KEY}.xlsx`);
+      showToast("এক্সেল রিপোর্ট ডাউনলোড হচ্ছে");
+    }
+
+    /* ===== নেভিগেশন ===== */
+    function tabIndexFor(panelId) {
+      return { overviewPanel: 0, mealsPanel: 1, bazarPanel: 2, summaryPanel: 3 }[panelId] ?? 4;
+    }
+
+    function showPanel(panelId) {
+      closeMore();
+      const targetId = panelId === "overview" ? "overviewPanel" : panelId;
+      currentPanel = targetId;
+      document.querySelectorAll('[data-nav-panel="true"]').forEach(p => {
+        const show = p.id === targetId;
+        p.classList.toggle("hidden", !show);
+        if (show) { p.classList.remove("fade-in"); void p.offsetWidth; p.classList.add("fade-in"); }
+      });
+      const idx = tabIndexFor(targetId);
+      $("tabbar").style.setProperty("--i", idx);
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", Number(t.dataset.tab) === idx));
+      updateFab();
+      playEnter($(targetId));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openMore() {
+      $("moreSheet").classList.add("open");
+      $("moreSheet").setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+    function closeMore() {
+      $("moreSheet").classList.remove("open");
+      $("moreSheet").setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") { closeMore(); closeLogin(); }
+      if (e.key === "Enter" && e.target && e.target.id === "memberName") addMember();
+    });
+
+    $("heroMemberSelect").addEventListener("change", e => setMyMember(e.target.value));
+
+    // স্ক্রল করলে হেডার লুকানো/দেখানো
+    (function () {
+      let lastY = 0;
+      const header = document.querySelector(".naz-header");
+      window.addEventListener("scroll", () => {
+        const y = window.scrollY;
+        if (y > lastY && y > 140) header.classList.add("hide");
+        else if (y < lastY) header.classList.remove("hide");
+        lastY = y;
+      }, { passive: true });
+    })();
+
+    /* ===== রিয়েলটাইম আপডেট ===== */
+    let refreshTimer;
+    function scheduleRefresh() {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(softRefresh, 700);
+    }
+    async function softRefresh() {
+      try { await loadSettings(); await loadMonthStatus(); await loadData(); updateUI(); } catch (e) {}
+    }
+    function startRealtime() {
+      if (realtimeChannel) return;
+      try {
+        realtimeChannel = db.channel("nazmahal-live");
+        ["members", "bazars", "extra_expenses", "deposits", "meals", "mess_settings", "month_status"].forEach(t =>
+          realtimeChannel.on("postgres_changes", { event: "*", schema: "public", table: t }, scheduleRefresh));
+        realtimeChannel.subscribe();
+      } catch (e) { console.warn("রিয়েলটাইম চালু করা যায়নি", e); }
+    }
+    document.addEventListener("visibilitychange", () => { if (!document.hidden && calc) scheduleRefresh(); });
+
+    /* ===== শুরু ===== */
+    async function initialize() {
+      try {
+        await loadSession();
+        await loadSettings();
+        await loadMonthStatus();
+        await loadManagers();
+        await loadData();
+        setupDateInputs();
+        selectedMealDate = $("mealDate").value;
+        mealDirty = false;
+        updateUI();
+        startRealtime();
+      } catch (e) {
+        console.error(e);
+        showToast("অ্যাপ লোড করতে সমস্যা হয়েছে। পেজ রিফ্রেশ করুন।", "error");
+      } finally {
+        $("footerYear").textContent = new Date().toLocaleDateString("bn-BD", { year: "numeric" });
+        setTimeout(() => { $("nazmahalLoader")?.classList.add("loader-hidden"); playEnter($("overviewPanel")); }, 600);
+      }
+    }
+
+    initialize();
+  </script>
 </body>
 </html>
