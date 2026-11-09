@@ -468,6 +468,13 @@
             <i class="fa-regular fa-calendar-days mr-1"></i> Current month: 
             <span id="currentMonthLabel"></span>
           </p>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <label for="monthHistorySelect" class="text-xs font-semibold text-blue-100">View month:</label>
+            <select id="monthHistorySelect" onchange="changeActiveMonth(this.value)"
+              class="max-w-[210px] rounded-lg border border-white/30 bg-white/15 px-2 py-1.5 text-xs font-semibold text-white">
+              <option value="">Loading months...</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -840,6 +847,9 @@ const YEAR = now.getFullYear();
 const MONTH = now.getMonth() + 1;
 const PERIOD_KEY = `${YEAR}-${String(MONTH).padStart(2, "0")}`;
 const MONTH_LABEL = now.toLocaleString("en-US", { month: "long", year: "numeric" });
+let activePeriodKey = PERIOD_KEY;
+let activeMonthClosed = false;
+let availablePeriods = [];
 
 let currentUser = null;
 let profile = null;
@@ -880,7 +890,63 @@ function isAssignedManager() {
 }
 
 function canEdit() {
-  return isAssignedManager() && !settings?.closed;
+  return isAssignedManager() &&
+    activePeriodKey === PERIOD_KEY &&
+    !activeMonthClosed;
+}
+
+function monthLabel(periodKey) {
+  const [year, month] = periodKey.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleString("en-US", {
+    month: "long", year: "numeric"
+  });
+}
+
+async function loadAvailableMonths() {
+  const tables = ["mess_months", "members", "bazars", "extra_expenses", "deposits", "meals"];
+  const responses = await Promise.all(tables.map(table =>
+    db.from(table).select("period_key")
+  ));
+  const periods = new Set([PERIOD_KEY]);
+  responses.forEach(response => {
+    if (!response.error) (response.data || []).forEach(row => {
+      if (row.period_key) periods.add(row.period_key);
+    });
+  });
+  availablePeriods = [...periods].sort().reverse();
+  const select = $("monthHistorySelect");
+  if (!select) return;
+  select.innerHTML = availablePeriods.map(key =>
+    `<option value="${key}">${escapeHTML(monthLabel(key))}${key === PERIOD_KEY ? " (Current)" : ""}</option>`
+  ).join("");
+  select.value = activePeriodKey;
+}
+
+async function loadActiveMonthStatus() {
+  const { data: monthRow, error } = await db
+    .from("mess_months")
+    .select("period_key, closed")
+    .eq("period_key", activePeriodKey)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Month status:", error);
+    // Keep legacy current-month status usable until the SQL migration is installed.
+    activeMonthClosed = activePeriodKey === PERIOD_KEY ? !!settings?.closed : true;
+    return;
+  }
+  activeMonthClosed = monthRow ? !!monthRow.closed : activePeriodKey !== PERIOD_KEY;
+}
+
+async function changeActiveMonth(periodKey) {
+  if (!periodKey || !availablePeriods.includes(periodKey)) return;
+  activePeriodKey = periodKey;
+  await loadActiveMonthStatus();
+  await loadData();
+  setupDateInputs();
+  updateUI();
+  renderMealInputs();
+  subscribeRealtime();
 }
 
 function todayString() {
@@ -890,9 +956,11 @@ function todayString() {
 
 function setupDateInputs() {
   ["bazarDate","depositDate","extraDate","mealDate"].forEach(id => {
-    $(id).min = `${PERIOD_KEY}-01`;
-    $(id).max = todayString().startsWith(PERIOD_KEY) ? todayString() : `${PERIOD_KEY}-${new Date(YEAR, MONTH, 0).getDate()}`;
-    $(id).value = todayString().startsWith(PERIOD_KEY) ? todayString() : `${PERIOD_KEY}-01`;
+    const [year, month] = activePeriodKey.split("-").map(Number);
+    const lastDay = new Date(year, month, 0).getDate();
+    $(id).min = `${activePeriodKey}-01`;
+    $(id).max = todayString().startsWith(activePeriodKey) ? todayString() : `${activePeriodKey}-${String(lastDay).padStart(2, "0")}`;
+    $(id).value = todayString().startsWith(activePeriodKey) ? todayString() : `${activePeriodKey}-01`;
   });
 }
 
@@ -978,11 +1046,11 @@ async function loadSettings() {
 
 async function loadData() {
   const [members, bazars, extras, deposits, meals] = await Promise.all([
-    db.from("members").select("*").eq("period_key", PERIOD_KEY).order("created_at"),
-    db.from("bazars").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false }),
-    db.from("extra_expenses").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false }),
-    db.from("deposits").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false }),
-    db.from("meals").select("*").eq("period_key", PERIOD_KEY).order("date", { ascending: false }).order("created_at", { ascending: false })
+    db.from("members").select("*").eq("period_key", activePeriodKey).order("created_at"),
+    db.from("bazars").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("extra_expenses").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("deposits").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false }),
+    db.from("meals").select("*").eq("period_key", activePeriodKey).order("date", { ascending: false }).order("created_at", { ascending: false })
   ]);
 
   const results = [members, bazars, extras, deposits, meals];
@@ -1047,25 +1115,44 @@ async function saveManager() {
 
 async function toggleMonthClose() {
   if (!isAdmin()) return;
-
-  const next = !settings.closed;
-  const action = next ? "close" : "re-open";
-
-  if (!confirm(`Are you sure you want to ${action} this month?`)) return;
-
-  const { error } = await db
-    .from("mess_settings")
-    .update({ closed: next, updated_at: new Date().toISOString() })
-    .eq("id", true);
-
-  if (error) {
-    showToast(error.message, "error");
+  if (activePeriodKey !== PERIOD_KEY) {
+    showToast("Only the current month can be closed or reopened.", "error");
     return;
   }
 
+  const next = !activeMonthClosed;
+  const action = next ? "close" : "re-open";
+  const prompt = next
+    ? `Close ${monthLabel(activePeriodKey)} and carry all members into next month?`
+    : `Re-open ${monthLabel(activePeriodKey)}?`;
+  if (!confirm(prompt)) return;
+
+  if (next) {
+    const { error } = await db.rpc("close_mess_month_and_carry_members", {
+      p_period_key: activePeriodKey
+    });
+    if (error) {
+      showToast(error.message || "Could not close month. Run the Supabase SQL setup first.", "error");
+      return;
+    }
+  } else {
+    const { error } = await db.from("mess_months")
+      .upsert({ period_key: activePeriodKey, closed: false }, { onConflict: "period_key" });
+    if (error) {
+      showToast(error.message, "error");
+      return;
+    }
+    // Keep the legacy flag synchronized for older versions of the site.
+    await db.from("mess_settings")
+      .update({ closed: false, updated_at: new Date().toISOString() })
+      .eq("id", true);
+  }
+
   await loadSettings();
+  await loadAvailableMonths();
+  await loadActiveMonthStatus();
   updateUI();
-  showToast(next ? "Month closed" : "Month re-opened");
+  showToast(next ? "Month closed. Members carried forward." : "Month re-opened");
 }
 
 async function addMember() {
@@ -1075,7 +1162,7 @@ async function addMember() {
   if (!name) return showToast("Enter member name", "error");
 
   const { error } = await db.from("members").insert({
-    period_key: PERIOD_KEY,
+    period_key: activePeriodKey,
     name
   });
 
@@ -1108,7 +1195,7 @@ async function addBazar() {
   if (!date || !item || amount <= 0) return showToast("Fill all Big Bazar fields", "error");
 
   const { error } = await db.from("bazars").insert({
-    period_key: PERIOD_KEY, date, item, category, amount
+    period_key: activePeriodKey, date, item, category, amount
   });
 
   if (error) return showToast(error.message, "error");
@@ -1140,7 +1227,7 @@ async function addDeposit() {
   if (!date || !member_id || amount <= 0) return showToast("Fill all deposit fields", "error");
 
   const { error } = await db.from("deposits").insert({
-    period_key: PERIOD_KEY, date, member_id, amount
+    period_key: activePeriodKey, date, member_id, amount
   });
 
   if (error) return showToast(error.message, "error");
@@ -1172,7 +1259,7 @@ async function addExtra() {
   if (!date || !item || amount <= 0) return showToast("Fill all expense fields", "error");
 
   const { error } = await db.from("extra_expenses").insert({
-    period_key: PERIOD_KEY, date, item, category, amount
+    period_key: activePeriodKey, date, item, category, amount
   });
 
   if (error) return showToast(error.message, "error");
@@ -1253,7 +1340,7 @@ async function addMeal() {
       }).eq("id", existing.id);
     } else {
       result = await db.from("meals").insert({
-        period_key: PERIOD_KEY,
+        period_key: activePeriodKey,
         date,
         member_id: row.member_id,
         own_meal: row.own_meal,
@@ -1493,6 +1580,7 @@ function updateDashboard() {
 
 function updateUI() {
   $("currentMonthLabel").textContent = MONTH_LABEL;
+  if ($("monthHistorySelect")) $("monthHistorySelect").value = activePeriodKey;
   // Account status is for signed-in Admin/Moderator accounts only; public viewers do not need it.
   $("accountStatusPanel").classList.toggle("hidden", !currentUser);
 
@@ -1526,11 +1614,12 @@ function updateUI() {
   $("adminControls").classList.toggle("hidden", !isAdmin());
   $("adminManagerBox").classList.toggle("hidden", !isAdmin());
 
-  $("monthStatusText").textContent = settings?.closed ? "Closed" : "Open";
+  $("monthStatusText").textContent = activeMonthClosed ? "Closed" : "Open";
   $("monthStatusDot").className =
-    `h-3 w-3 rounded-full ${settings?.closed ? "bg-red-500" : "bg-emerald-500"}`;
+    `h-3 w-3 rounded-full ${activeMonthClosed ? "bg-red-500" : "bg-emerald-500"}`;
 
-  $("closeMonthBtn").innerHTML = settings?.closed
+  $("closeMonthBtn").classList.toggle("hidden", activePeriodKey !== PERIOD_KEY);
+  $("closeMonthBtn").innerHTML = activeMonthClosed
     ? '<i class="fa-solid fa-lock-open mr-1"></i> Re-open Month'
     : '<i class="fa-solid fa-lock mr-1"></i> Close Month';
 
@@ -1539,7 +1628,9 @@ function updateUI() {
   ["memberFormArea","bazarFormArea","depositFormArea","extraFormArea","mealFormArea"]
     .forEach(id => $(id).classList.toggle("hidden", !editable));
 
-  $("viewerNotice").innerHTML = editable
+  $("viewerNotice").innerHTML = activePeriodKey !== PERIOD_KEY
+    ? `<i class="fa-solid fa-clock-rotate-left mr-1"></i> ${escapeHTML(monthLabel(activePeriodKey))} history — read-only for everyone.`
+    : editable
     ? `<i class="fa-solid fa-pen-to-square mr-1"></i> You can edit this month's হিসাব.`
     : currentUser
       ? `<i class="fa-solid fa-eye mr-1"></i> View mode. Only the assigned manager can edit; Admin has full control.`
@@ -1565,26 +1656,27 @@ async function refreshData() {
 function subscribeRealtime() {
   if (realtimeChannel) db.removeChannel(realtimeChannel);
 
-  realtimeChannel = db.channel(`mess-live-${PERIOD_KEY}`)
+  realtimeChannel = db.channel(`mess-live-${activePeriodKey}`)
     .on("postgres_changes",
-      { event: "*", schema: "public", table: "members", filter: `period_key=eq.${PERIOD_KEY}` },
+      { event: "*", schema: "public", table: "members", filter: `period_key=eq.${activePeriodKey}` },
       async () => { await refreshData(); })
     .on("postgres_changes",
-      { event: "*", schema: "public", table: "bazars", filter: `period_key=eq.${PERIOD_KEY}` },
+      { event: "*", schema: "public", table: "bazars", filter: `period_key=eq.${activePeriodKey}` },
       async () => { await refreshData(); })
     .on("postgres_changes",
-      { event: "*", schema: "public", table: "extra_expenses", filter: `period_key=eq.${PERIOD_KEY}` },
+      { event: "*", schema: "public", table: "extra_expenses", filter: `period_key=eq.${activePeriodKey}` },
       async () => { await refreshData(); })
     .on("postgres_changes",
-      { event: "*", schema: "public", table: "deposits", filter: `period_key=eq.${PERIOD_KEY}` },
+      { event: "*", schema: "public", table: "deposits", filter: `period_key=eq.${activePeriodKey}` },
       async () => { await refreshData(); })
     .on("postgres_changes",
-      { event: "*", schema: "public", table: "meals", filter: `period_key=eq.${PERIOD_KEY}` },
+      { event: "*", schema: "public", table: "meals", filter: `period_key=eq.${activePeriodKey}` },
       async () => { await refreshData(); })
     .on("postgres_changes",
       { event: "*", schema: "public", table: "mess_settings", filter: "id=eq.true" },
       async () => {
         await loadSettings();
+        await loadActiveMonthStatus();
         updateUI();
       })
     .subscribe(status => {
@@ -1595,7 +1687,7 @@ function subscribeRealtime() {
 async function downloadJSONBackup() {
   const backup = {
     exported_at: new Date().toISOString(),
-    period_key: PERIOD_KEY,
+    period_key: activePeriodKey,
     members: data.members,
     bazars: data.bazars,
     extras: data.extras,
@@ -1607,7 +1699,7 @@ async function downloadJSONBackup() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `mess-backup-${PERIOD_KEY}.json`;
+  a.download = `mess-backup-${activePeriodKey}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1661,7 +1753,7 @@ function downloadExcelReport() {
   })));
   addSheet("Final Bill", summary);
 
-  XLSX.writeFile(wb, `mess-report-${PERIOD_KEY}.xlsx`);
+  XLSX.writeFile(wb, `mess-report-${activePeriodKey}.xlsx`);
 }
 
 
@@ -1684,6 +1776,8 @@ function showPanel(panelId) {
 async function initialize() {
   await loadSession();
   await loadSettings();
+  await loadAvailableMonths();
+  await loadActiveMonthStatus();
   await loadData();
 
   setupDateInputs();
@@ -1700,6 +1794,8 @@ db.auth.onAuthStateChange(async (_event, session) => {
     profile = null;
   }
   await loadSettings();
+  await loadAvailableMonths();
+  await loadActiveMonthStatus();
   await loadData();
   updateUI();
   renderMealInputs();
@@ -1720,21 +1816,84 @@ initialize();
   <p class="footer-copyright">© <span id="footerYear"></span> Nazmahal Mess Meal Manager <span class="footer-dot">•</span> All rights reserved.</p>
 </footer>
 <style>
-  .site-footer{position:relative;isolation:isolate;overflow:hidden;margin-top:48px;padding:32px 16px 26px;text-align:center;color:#dbeafe;background:linear-gradient(120deg,#0f172a,#172554,#312e81,#0f766e,#0f172a);background-size:300% 300%;animation:footerGradientFlow 14s ease infinite;border-top:1px solid rgba(125,211,252,.38)}
+  .site-footer{
+    position:relative;isolation:isolate;overflow:hidden;
+    box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+    margin:48px 0 0;padding:28px clamp(16px,3vw,44px);
+    display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1.5fr);
+    align-items:center;justify-items:center;column-gap:clamp(18px,3vw,42px);
+    text-align:center;color:#dbeafe;
+    background:linear-gradient(120deg,#0f172a,#172554,#312e81,#0f766e,#0f172a);
+    background-size:300% 300%;animation:footerGradientFlow 14s ease infinite;
+    border-top:1px solid rgba(125,211,252,.38)
+  }
+  .site-footer>*{min-width:0;max-width:100%}
   .site-footer:before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at 15% 20%,rgba(56,189,248,.18),transparent 35%),radial-gradient(circle at 85% 80%,rgba(167,139,250,.2),transparent 38%)}
   .footer-glow{position:absolute;top:-55px;left:50%;width:240px;height:100px;transform:translateX(-50%);background:#38bdf8;filter:blur(75px);opacity:.17;pointer-events:none}
-  .footer-credit{margin:0 0 10px;font-size:14px;letter-spacing:.04em;color:#cbd5e1}
+  .footer-credit{margin:0;font-size:14px;letter-spacing:.04em;color:#cbd5e1;line-height:1.7}
   .footer-heart{display:inline-block;color:#fb7185;animation:footerHeartbeat 1.4s ease-in-out infinite}
   .footer-author{position:relative;display:inline-flex;align-items:center;gap:9px;color:#7dd3fc;font-size:18px;font-weight:800;text-decoration:none;transition:color .3s,transform .3s,text-shadow .3s}
   .footer-author:hover{color:#fff;transform:translateY(-3px);text-shadow:0 0 18px rgba(125,211,252,.65)}
   .footer-author .fa-facebook{font-size:21px}
   .footer-external{font-size:10px;opacity:.7}
-  .footer-copyright{margin:17px 0 0;color:#a5b4fc;font-size:12px;letter-spacing:.025em}
+  .footer-copyright{margin:0;color:#a5b4fc;font-size:12px;letter-spacing:.025em;line-height:1.8;overflow-wrap:anywhere}
   .footer-dot{padding:0 5px;color:#67e8f9}
   @keyframes footerGradientFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
   @keyframes footerHeartbeat{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
-  @media(max-width:480px){.site-footer{padding:27px 12px 22px}.footer-author{font-size:16px}.footer-copyright{line-height:1.8}}
+  @media(max-width:767px){
+    .site-footer{grid-template-columns:minmax(0,1fr);row-gap:10px;padding:27px 16px 22px}
+    .footer-credit{font-size:13px}
+    .footer-author{font-size:17px}
+    .footer-copyright{max-width:34rem;font-size:11px}
+  }
+  @media(min-width:768px) and (max-width:1023px){
+    .site-footer{grid-template-columns:minmax(0,1fr) auto;row-gap:12px}
+    .footer-copyright{grid-column:1/-1}
+  }
   @media(prefers-reduced-motion:reduce){.site-footer,.footer-heart{animation:none}.footer-author{transition:none}}
+
+
+    #monthHistorySelect option { color: #1e293b; background: #fff; }
+    /* Responsive entry forms: amount and action always occupy usable width */
+    #bazarFormArea .grid, #extraFormArea .grid {
+      display: grid !important;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+    #bazarFormArea input, #bazarFormArea select,
+    #extraFormArea input, #extraFormArea select {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    #bazarFormArea .flex, #extraFormArea .flex {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      min-width: 0;
+      gap: 8px;
+    }
+    #bazarFormArea button, #extraFormArea button {
+      min-width: 76px;
+      white-space: nowrap;
+    }
+    @media (max-width: 767px) {
+      #bazarFormArea .grid, #extraFormArea .grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      #bazarFormArea .flex, #extraFormArea .flex {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      #bazarFormArea button, #extraFormArea button {
+        width: 100%;
+      }
+    }
+    @media (min-width: 768px) and (max-width: 1023px) {
+      #bazarFormArea .grid, #extraFormArea .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
 
     /* FINAL BILL DISPLAY FIX: cards on mobile only, table on PC */
     @media screen and (min-width: 768px) {
